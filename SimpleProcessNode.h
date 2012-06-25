@@ -108,6 +108,9 @@ private:
 
 	// indicates that the output has to be recomputed
 	bool _outputsDirty;
+
+	// indicates that someone was asking for an update of the outputs
+	bool _updateRequested;
 };
 
 }

@@ -146,7 +146,14 @@ SimpleProcessNode::onInputUpdated(const Updated& signal, int numInput) {
 	// this input is up-to-date now
 	_inputDirty[numInput] = false;
 
-	// don't do anything if not all inputs have been updated
+	// don't do anything, if no-one is listening
+	if (!_updateRequested) {
+
+		LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] have no update request -- skip updating outputs" << std::endl;
+		return;
+	}
+
+	// don't do anything, if not all inputs have been updated
 	if (haveDirtyInput()) {
 
 		LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] some inputs are still dirty" << std::endl;
@@ -168,6 +175,7 @@ SimpleProcessNode::onInputUpdated(const Updated& signal, int numInput) {
 
 	// send Updated signal
 	_updated();
+	_updateRequested = false;
 }
 
 void
@@ -209,6 +217,13 @@ SimpleProcessNode::onMultiInputUpdated(const Updated& signal, int numInput, int 
 	// this input is up-to-date now
 	_multiInputDirty[numMultiInput][numInput] = false;
 
+	// don't do anything, if no-one is listening
+	if (!_updateRequested) {
+
+		LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] have no update request -- skip updating outputs" << std::endl;
+		return;
+	}
+
 	// don't do anything if not all inputs have been updated
 	if (haveDirtyInput()) {
 
@@ -231,6 +246,7 @@ SimpleProcessNode::onMultiInputUpdated(const Updated& signal, int numInput, int 
 
 	// send Updated signal
 	_updated();
+	_updateRequested = false;
 }
 
 void
@@ -241,6 +257,8 @@ SimpleProcessNode::onUpdate(const Update& signal) {
 	if (haveDirtyInput()) {
 
 		LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] I have some dirty inputs -- sending update signals" << std::endl;
+
+		_updateRequested = true;
 
 		sendUpdateSignals();
 
