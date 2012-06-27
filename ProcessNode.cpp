@@ -39,6 +39,33 @@ ProcessNode::setInput(const std::string& name, boost::shared_ptr<Data> data) {
 }
 
 bool
+ProcessNode::setInput(InputBase& input) {
+
+	if (input.hasAssignedOutput())
+		return getInput().accept(input.getAssignedOutput());
+	else
+		return getInput().accept(input.getAssignedSharedPtr());
+}
+
+bool
+ProcessNode::setInput(unsigned int i, InputBase& input) {
+
+	if (input.hasAssignedOutput())
+		return getInput(i).accept(input.getAssignedOutput());
+	else
+		return getInput(i).accept(input.getAssignedSharedPtr());
+}
+
+bool
+ProcessNode::setInput(const std::string& name, InputBase& input) {
+
+	if (input.hasAssignedOutput())
+		return getInput(name).accept(input.getAssignedOutput());
+	else
+		return getInput(name).accept(input.getAssignedSharedPtr());
+}
+
+bool
 ProcessNode::addInput(OutputBase& output) {
 
 	return getMultiInput().accept(output);

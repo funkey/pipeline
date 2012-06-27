@@ -43,6 +43,12 @@ InputBase::registerBackwardCallback(signals::CallbackBase& callback) {
 	_backwardReceiver.registerCallback(callback);
 }
 
+bool
+InputBase::hasAssignedOutput() {
+
+	return _assignedOutput != 0;
+}
+
 OutputBase&
 InputBase::getAssignedOutput() {
 
@@ -53,6 +59,12 @@ void
 InputBase::setAssignedOutput(OutputBase& output) {
 
 	_assignedOutput = &output;
+}
+
+void
+InputBase::unsetAssignedOutput() {
+
+	_assignedOutput = 0;
 }
 
 signals::Sender&

@@ -77,6 +77,36 @@ public:
 	bool setInput(const std::string& name, boost::shared_ptr<Data> data);
 
 	/**
+	 * Assign the first input of this process node to same value as another
+	 * input. A call to this function is equivalent to setInput(0, input).
+	 *
+	 * @param data The data object as a shared pointer.
+	 * @return true, if the input and data are compatible and the assignment
+	 *         has been made.
+	 */
+	bool setInput(InputBase& input);
+
+	/**
+	 * Assign the ith input of this process node to the same value as another
+	 * input.
+	 *
+	 * @param data The data object as a shared pointer.
+	 * @return true, if the input and data are compatible and the assignment
+	 *         has been made.
+	 */
+	bool setInput(unsigned int i, InputBase& input);
+
+	/**
+	 * Assigns a named input of this process node to the same value as another
+	 * input.
+	 *
+	 * @param data The data object as a shared pointer.
+	 * @return true, if the input and data are compatible and the assignment
+	 *         has been made.
+	 */
+	bool setInput(const std::string& name, InputBase& input);
+
+	/**
 	 * Adds an output to the first multi-input of this process node. A call to
 	 * this method is equivalent to addInput(0, output).
 	 *

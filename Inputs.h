@@ -331,6 +331,12 @@ public:
 
 private:
 
+	// inherited from InputBase, but not used in Inputs
+	boost::shared_ptr<Data> getAssignedSharedPtr() const {
+
+		return boost::shared_ptr<Data>();
+	}
+
 	// a list of the current inputs
 	inputs_type _inputs;
 

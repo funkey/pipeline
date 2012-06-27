@@ -149,11 +149,24 @@ public:
 	void registerBackwardCallback(signals::CallbackBase& callback);
 
 	/**
+	 * Returns true, if this input was assigned an output (it can still have a
+	 * value from a shared pointer, though.
+	 */
+	bool hasAssignedOutput();
+
+	/**
 	 * Get a reference to the currently assigned output to this input.
 	 *
 	 * @return The currently assigned output.
 	 */
 	OutputBase& getAssignedOutput();
+
+	/**
+	 * Get a shared pointer to the currently assigned data.
+	 *
+	 * @return The currently assigned shared pointer.
+	 */
+	virtual boost::shared_ptr<Data> getAssignedSharedPtr() const = 0;
 
 	bool accept(OutputBase& output);
 
@@ -168,6 +181,8 @@ protected:
 	virtual bool tryToAccept(OutputBase& output) = 0;
 
 	void setAssignedOutput(OutputBase& output);
+
+	void unsetAssignedOutput();
 
 private:
 
@@ -249,6 +264,9 @@ public:
 			// establish the internal signalling connections
 			_internalSender.connect(getBackwardReceiver());
 
+			// remember that we are not bound to an output
+			unsetAssignedOutput();
+
 			// inform about new input
 			(*_inputSet)(InputSet<DataType>(casted_data));
 
@@ -259,6 +277,11 @@ public:
 		}
 
 		return false;
+	}
+
+	boost::shared_ptr<Data> getAssignedSharedPtr() const {
+
+		return _data;
 	}
 
 	boost::shared_ptr<DataType> get() const {
