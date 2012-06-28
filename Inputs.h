@@ -138,16 +138,20 @@ public:
 	}
 
 	/**
-	 * Try to add output to this multi-input.
+	 * Try to add an output to this multi-input.
 	 *
 	 * @return true, if the output and multi-input are compatible and the output
 	 *         has been added.
 	 */
-	virtual bool tryToAccept(OutputBase& output) = 0;
+	virtual bool accept(OutputBase& output) = 0;
 
-	using InputBase::accept;
-
-	virtual bool accept(boost::shared_ptr<Data> data) { return false; /* TODO: implement this */ }
+	/**
+	 * Try to add a data pointer to this multi-input.
+	 *
+	 * @return true, if the pointer and multi-input are compatible and the
+	 *         pointer has been added.
+	 */
+	virtual bool accept(boost::shared_ptr<Data> data) = 0;
 
 	/**
 	 * Remove all assigned outputs from this multi-input.
@@ -203,74 +207,14 @@ public:
 		_internalSender.registerSlot(_inputAdded);
 	}
 
-	bool tryToAccept(OutputBase& output) {
+	bool accept(OutputBase& output) {
 
-		LOG_ALL(pipelinelog) << "[" << typeName(this) << "] trying to accept output " << typeName(output) << std::endl;
+		return __accept(output);
+	}
 
-		// create a new input
-		Input<DataType> newInput;
+	bool accept(boost::shared_ptr<Data> data) {
 
-		// store it, if it is compatible
-		if (newInput.tryToAccept(output)) {
-
-			LOG_ALL(pipelinelog) << "[" << typeName(this) << "] I can accept it" << std::endl;
-
-			unsigned int numInput = _inputs.size();
-
-			_inputs.push_back(newInput);
-
-			LOG_ALL(pipelinelog) << "[" << typeName(this) << "] registering slots:" << std::endl;
-
-			foreach (signals::SlotsBase* slots, getSlots()) {
-
-				unsigned int s = slots->addSlot();
-
-				newInput.registerBackwardSlot((*slots)[s]);
-
-				LOG_ALL(pipelinelog) << "[" << typeName(this) << "] " << typeName((*slots)[s]) << std::endl;
-			}
-
-			LOG_ALL(pipelinelog) << "[" << typeName(this) << "] registering callbacks:" << std::endl;
-
-			typedef std::pair<CallbacksBase*, ProcessNode*> cp_pair;
-			foreach (cp_pair pair, getMultiCallbacks()) {
-
-				CallbacksBase* multiCallback = pair.first;
-				ProcessNode*   processNode   = pair.second;
-
-				if (processNode)
-					multiCallback->registerAtInput(newInput, numInput, processNode);
-				else
-					multiCallback->registerAtInput(newInput, numInput);
-
-				LOG_ALL(pipelinelog) << "[" << typeName(this) << "] " << typeName(multiCallback) << std::endl;
-			}
-
-			if (!_internalConnected) {
-
-				// establish the internal signalling connections
-				_internalSender.connect(getBackwardReceiver());
-
-				_internalConnected = true;
-			}
-
-			LOG_ALL(pipelinelog) << "[" << typeName(this) << "] establishing signalling connections" << std::endl;
-
-			// establish input-output signalling connections to Slots
-			output.getForwardSender().connect(newInput.getBackwardReceiver());
-			newInput.getBackwardSender().connect(output.getForwardReceiver());
-
-			// establish input-output signalling connections to Slot
-			output.getForwardSender().connect(getBackwardReceiver());
-			getBackwardSender().connect(output.getForwardReceiver());
-
-			LOG_ALL(pipelinelog) << "[" << typeName(this) << "] sending InputAdded" << std::endl;
-
-			// inform about new input
-			_inputAdded(InputAdded<DataType>(newInput));
-
-			return true;
-		}
+		return __accept(data);
 	}
 
 	void clear() {
@@ -330,6 +274,91 @@ public:
 	}
 
 private:
+
+	/**
+	 * General accept routine, independet of type of assigned output (which can
+	 * be OutputBase& or a shared_ptr<Data>.
+	 */
+	template <typename OutputType>
+	bool __accept(OutputType& output) {
+
+		LOG_ALL(pipelinelog) << "[" << typeName(this) << "] trying to accept output " << typeName(output) << std::endl;
+
+		// create a new input
+		Input<DataType> newInput;
+
+		// store it, if it is compatible
+		if (newInput.accept(output)) {
+
+			LOG_ALL(pipelinelog) << "[" << typeName(this) << "] I can accept it" << std::endl;
+
+			unsigned int numInput = _inputs.size();
+
+			_inputs.push_back(newInput);
+
+			LOG_ALL(pipelinelog) << "[" << typeName(this) << "] registering slots:" << std::endl;
+
+			foreach (signals::SlotsBase* slots, getSlots()) {
+
+				unsigned int s = slots->addSlot();
+
+				newInput.registerBackwardSlot((*slots)[s]);
+
+				LOG_ALL(pipelinelog) << "[" << typeName(this) << "] " << typeName((*slots)[s]) << std::endl;
+			}
+
+			LOG_ALL(pipelinelog) << "[" << typeName(this) << "] registering callbacks:" << std::endl;
+
+			typedef std::pair<CallbacksBase*, ProcessNode*> cp_pair;
+			foreach (cp_pair pair, getMultiCallbacks()) {
+
+				CallbacksBase* multiCallback = pair.first;
+				ProcessNode*   processNode   = pair.second;
+
+				if (processNode)
+					multiCallback->registerAtInput(newInput, numInput, processNode);
+				else
+					multiCallback->registerAtInput(newInput, numInput);
+
+				LOG_ALL(pipelinelog) << "[" << typeName(this) << "] " << typeName(multiCallback) << std::endl;
+			}
+
+			if (!_internalConnected) {
+
+				// establish the internal signalling connections
+				_internalSender.connect(getBackwardReceiver());
+
+				_internalConnected = true;
+			}
+
+			LOG_ALL(pipelinelog) << "[" << typeName(this) << "] establishing signalling connections" << std::endl;
+
+			establishingSignalling(output, newInput);
+
+			LOG_ALL(pipelinelog) << "[" << typeName(this) << "] sending InputAdded" << std::endl;
+
+			// inform about new input
+			_inputAdded(InputAdded<DataType>(newInput));
+
+			return true;
+		}
+	}
+
+	void establishingSignalling(OutputBase& output, InputBase& newInput) {
+
+		// establish input-output signalling connections to Slots
+		output.getForwardSender().connect(newInput.getBackwardReceiver());
+		newInput.getBackwardSender().connect(output.getForwardReceiver());
+
+		// establish input-output signalling connections to Slot
+		output.getForwardSender().connect(getBackwardReceiver());
+		getBackwardSender().connect(output.getForwardReceiver());
+	}
+
+	void establishingSignalling(boost::shared_ptr<Data> data, InputBase& newInput) {
+
+		// no signalling for data pointers as inputs
+	}
 
 	// inherited from InputBase, but not used in Inputs
 	boost::shared_ptr<Data> getAssignedSharedPtr() const {

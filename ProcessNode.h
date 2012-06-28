@@ -135,6 +135,34 @@ public:
 	bool addInput(const std::string& name, OutputBase& output);
 
 	/**
+	 * Adds the value of an input to the first multi-input of this process node.
+	 * A call to this method is equivalent to addInput(0, input).
+	 *
+	 * @param input The input of another process node.
+	 * @return true, if the input and input are compatible and the assignment
+	 *         has been made.
+	 */
+	bool addInput(InputBase& input);
+
+	/**
+	 * Adds the value of an input to the ith multi-input of this process node.
+	 *
+	 * @param input The input of another process node.
+	 * @return true, if the input and input are compatible and the assignment
+	 *         has been made.
+	 */
+	bool addInput(unsigned int i, InputBase& input);
+
+	/**
+	 * Adds the value of an input to a named multi-input of this process node.
+	 *
+	 * @param input The input of another process node.
+	 * @return true, if the input and input are compatible and the assignment
+	 *         has been made.
+	 */
+	bool addInput(const std::string& name, InputBase& input);
+
+	/**
 	 * Clear all the assignments of a multi-input.
 	 *
 	 * @param i The number of the multi-input.

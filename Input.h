@@ -168,17 +168,21 @@ public:
 	 */
 	virtual boost::shared_ptr<Data> getAssignedSharedPtr() const = 0;
 
-	bool accept(OutputBase& output);
+	/**
+	 * Try to accept an output.
+	 */
+	virtual bool accept(OutputBase& output) = 0;
+
+	/**
+	 * Try to accept a data pointer.
+	 */
+	virtual bool accept(boost::shared_ptr<Data> data) = 0;
 
 	signals::Sender& getBackwardSender();
 
 	signals::Receiver& getBackwardReceiver();
 
-	virtual bool accept(boost::shared_ptr<Data> data) = 0;
-
 protected:
-
-	virtual bool tryToAccept(OutputBase& output) = 0;
 
 	void setAssignedOutput(OutputBase& output);
 
@@ -213,7 +217,7 @@ public:
 		_internalSender.registerSlot(*_updated);
 	}
 
-	bool tryToAccept(OutputBase& output) {
+	bool accept(OutputBase& output) {
 
 		if (!output.getData())
 			output.createData();

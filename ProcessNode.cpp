@@ -83,6 +83,33 @@ ProcessNode::addInput(const std::string& name, OutputBase& output) {
 	return getMultiInput(name).accept(output);
 }
 
+bool
+ProcessNode::addInput(InputBase& input) {
+
+	if (input.hasAssignedOutput())
+		return getMultiInput().accept(input.getAssignedOutput());
+
+	return false;
+}
+
+bool
+ProcessNode::addInput(unsigned int i, InputBase& input) {
+
+	if (input.hasAssignedOutput())
+		return getMultiInput(i).accept(input.getAssignedOutput());
+
+	return false;
+}
+
+bool
+ProcessNode::addInput(const std::string& name, InputBase& input) {
+
+	if (input.hasAssignedOutput())
+		return getMultiInput(name).accept(input.getAssignedOutput());
+
+	return false;
+}
+
 void
 ProcessNode::clearInputs(unsigned int i) {
 

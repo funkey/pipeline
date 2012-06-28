@@ -23,14 +23,6 @@ InputBase::getName() {
 	return _name;
 }
 
-bool
-InputBase::accept(OutputBase& output) {
-
-	LOG_ALL(pipelinelog) << "[" << typeName(this) << "] trying to accept output " << typeName(output) << std::endl;
-
-	return tryToAccept(output);
-}
-
 void
 InputBase::registerBackwardSlot(signals::SlotBase& slot) {
 
