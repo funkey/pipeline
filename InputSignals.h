@@ -4,6 +4,7 @@
 #include <boost/shared_ptr.hpp>
 
 #include "signals/PipelineSignal.h"
+#include "Wrap.h"
 
 namespace pipeline {
 

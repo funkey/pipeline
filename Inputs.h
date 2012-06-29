@@ -190,10 +190,32 @@ private:
 	std::vector<std::pair<CallbacksBase*, ProcessNode*> > _multiCallbacks;
 };
 
-template <typename DataType>
-class InputsImpl : public MultiInput {
+template <bool, typename DataType>
+struct _input_added_dispatch {};
 
-	typedef std::vector<Input<DataType> >        inputs_type;
+template <typename DataType>
+struct _input_added_dispatch<true, DataType> {
+
+	typedef InputAdded<DataType> value;
+};
+
+template <typename DataType>
+struct _input_added_dispatch<false, DataType> {
+
+	typedef InputAdded<Wrap<DataType> > value;
+};
+
+template <typename DataType>
+class input_added_dispatch : public _input_added_dispatch<boost::is_base_of<Data, DataType>::value, DataType> {};
+
+template <typename DataType>
+class Inputs : public MultiInput {
+
+	typedef std::vector<Input<DataType> > inputs_type;
+
+	// this type is InputAdded<Wrap<DataType> > if DataType not base of Data,
+	// InputAdded<DataType> otherwise
+	typedef typename input_added_dispatch<DataType>::value input_added_type;
 
 public:
 
@@ -201,7 +223,7 @@ public:
 
 	typedef typename inputs_type::iterator       iterator;
 
-	InputsImpl() :
+	Inputs() :
 		_internalConnected(false) {
 
 		_internalSender.registerSlot(_inputAdded);
@@ -338,7 +360,7 @@ private:
 			LOG_ALL(pipelinelog) << "[" << typeName(this) << "] sending InputAdded" << std::endl;
 
 			// inform about new input
-			_inputAdded(InputAdded<DataType>(newInput));
+			_inputAdded(input_added_type(newInput));
 
 			return true;
 		}
@@ -370,7 +392,7 @@ private:
 	inputs_type _inputs;
 
 	// slot to inform about a new input
-	signals::Slot<const InputAdded<DataType> > _inputAdded;
+	signals::Slot<const input_added_type> _inputAdded;
 
 	// this sender is used to inform about changes in the input
 	signals::Sender _internalSender;
@@ -380,18 +402,6 @@ private:
 	// not do anything.
 	bool _internalConnected;
 };
-
-template <bool, typename T>
-class InputsTypeDispatch {};
-
-template <typename T>
-class InputsTypeDispatch<true, T> : public InputsImpl<T> {};
-
-template <typename T>
-class InputsTypeDispatch<false, T> : public InputsImpl<Wrap<T> > {};
-
-template <typename T>
-class Inputs : public InputsTypeDispatch<boost::is_base_of<Data, T>::value, T> {};
 
 } // namespace pipeline
 

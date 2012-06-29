@@ -13,6 +13,7 @@
 #include "Data.h"
 #include "Logging.h"
 #include "ProcessNodeCallback.h"
+#include "Wrap.h"
 
 namespace pipeline {
 
@@ -249,26 +250,6 @@ public:
 private:
 
 	boost::shared_ptr<DataType> _data;
-};
-
-template <typename T>
-class Wrap : public Data {
-
-public:
-
-	Wrap() {}
-
-	Wrap(const T& value) :
-		_value(value) {}
-
-	T& get() {
-
-		return _value;
-	}
-
-private:
-
-	T _value;
 };
 
 template <bool, typename T>
