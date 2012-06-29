@@ -78,11 +78,19 @@ private:
 
 	void onMultiInputUpdated(const Updated& signal, int numInput, int numMultiInput);
 
-	void onUpdate(const Update& signal);
+	void onUpdate(const Update& signal, int numOutput);
 
 	void sendUpdateSignals();
 
+	void sendUpdatedSignals();
+
+	void sendModifiedSignals();
+
 	bool haveDirtyInput();
+
+	bool haveDirtyOutput();
+
+	void setOutputsDirty(bool dirty = true);
 
 	// one boolean for each input
 	std::vector<bool> _inputDirty;
@@ -96,9 +104,9 @@ private:
 	// a vector of slots for each multi-input
 	std::vector<signals::Slots<Update>*> _multiInputUpdates;
 
-	// one modified and updated slot for the output
-	signals::Slot<Modified> _modified;
-	signals::Slot<Updated>  _updated;
+	// one modified and updated slot for each output
+	signals::Slots<Modified> _modified;
+	signals::Slots<Updated>  _updated;
 
 	// the current number of inputs
 	int _numInputs;
@@ -106,11 +114,17 @@ private:
 	// the current number of multi-inputs
 	int _numMultiInputs;
 
-	// indicates that the output has to be recomputed
-	bool _outputsDirty;
+	// the current number of outputs
+	int _numOutputs;
 
-	// indicates that someone was asking for an update of the outputs
+	// indicates that an output has to be recomputed
+	std::vector<bool> _outputDirty;
+
+	// indicates that someone was asking for an update of an output
 	bool _updateRequested;
+
+	// a look-up table from outputs to their number
+	std::map<OutputBase*, unsigned int> _outputNums;
 };
 
 }

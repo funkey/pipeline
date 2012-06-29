@@ -144,6 +144,24 @@ public:
 	}
 
 	/**
+	 * Register an arbitrary callback as forward callback on this output. Make
+	 * sure that the callback will only be called as long as the given
+	 * ProcessNode is still alive.
+	 *
+	 * @param callback A boost function object.
+	 * @param processNode A ProcessNode to track.
+	 */
+	template <typename SignalType>
+	void registerForwardCallback(boost::function<void(SignalType&)> callback, ProcessNode* processNode) {
+
+		ProcessNodeCallback<SignalType>* processNodeCallback = new ProcessNodeCallback<SignalType>(processNode, callback);
+
+		registerForwardCallback(*processNodeCallback);
+
+		_callbacks.push_back(processNodeCallback);
+	}
+
+	/**
 	 * Register an arbitrary callback as forward callback on this output.
 	 *
 	 * @param A Callback object.

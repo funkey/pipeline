@@ -9,7 +9,7 @@ namespace pipeline {
 SimpleProcessNode::SimpleProcessNode() :
 	_numInputs(0),
 	_numMultiInputs(0),
-	_outputsDirty(true) {}
+	_numOutputs(0) {}
 
 SimpleProcessNode::~SimpleProcessNode() {
 
@@ -56,7 +56,7 @@ SimpleProcessNode::registerInput(InputBase& input, std::string name, InputType i
 
 	_numInputs++;
 
-	_outputsDirty = true;
+	setOutputsDirty();
 }
 
 void
@@ -86,7 +86,7 @@ SimpleProcessNode::registerInputs(MultiInput& input, std::string name) {
 
 	_numMultiInputs++;
 
-	_outputsDirty = true;
+	setOutputsDirty();
 }
 
 void
@@ -96,11 +96,26 @@ SimpleProcessNode::registerOutput(OutputBase& output, std::string name) {
 
 	ProcessNode::registerOutput(output, name);
 
-	output.registerForwardCallback(&SimpleProcessNode::onUpdate, this);
-	output.registerForwardSlot(_modified);
-	output.registerForwardSlot(_updated);
+	int numOutput = _numOutputs;
 
-	_outputsDirty = true;
+	_outputDirty.push_back(true);
+
+	_modified.addSlot();
+	_updated.addSlot();
+
+	// create a signal callbacks that stores the number of the output with it
+	boost::function<void(Update&)> funOnUpdate = boost::bind(&SimpleProcessNode::onUpdate, this, _1, numOutput);
+
+	output.registerForwardCallback(funOnUpdate, this);
+
+	// register the appropriate update signal for this output
+	output.registerForwardSlot(_modified[numOutput]);
+	output.registerForwardSlot(_updated[numOutput]);
+
+	// store the output number in a look-up table
+	_outputNums[&output] = numOutput;
+
+	_numOutputs++;
 }
 
 /**
@@ -119,11 +134,19 @@ SimpleProcessNode::updateInputs() {
 void
 SimpleProcessNode::setDirty(OutputBase& output) {
 
-	_outputsDirty = true;
+	if (_outputNums.count(&output) == 0)
+		LOG_ERROR(simpleprocessnodelog)
+				<< "[" << typeName(this) << "] invalid request to set dirty an unknown output" << std::endl;
 
-	_modified();
+	unsigned int outputNum = _outputNums[&output];
 
-	// TODO: send modified only for the outputs that actually changed
+	LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] user set dirty output " << outputNum << std::endl;
+
+	_outputDirty[outputNum] = true;
+
+	LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] sending modified to output " << outputNum << std::endl;
+
+	_modified[outputNum]();
 }
 
 void
@@ -133,9 +156,9 @@ SimpleProcessNode::onInputModified(const Modified& signal, int numInput) {
 
 	_inputDirty[numInput] = true;
 
-	_outputsDirty = true;
+	setOutputsDirty();
 
-	_modified();
+	sendModifiedSignals();
 }
 
 void
@@ -163,18 +186,20 @@ SimpleProcessNode::onInputUpdated(const Updated& signal, int numInput) {
 	LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] all inputs are up-to-date, updating outputs" << std::endl;
 
 	// all inputs are up-to-date -- call user's update function if needed
-	if (_outputsDirty) {
+	if (haveDirtyOutput()) {
 
 		updateOutputs();
-		_outputsDirty = false;
+		setOutputsDirty(false);
 
-	} else
+	} else {
+
 		LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] outputs are still up-to-date" << std::endl;
+	}
 
 	LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] sending updated signal" << std::endl;
 
-	// send Updated signal
-	_updated();
+	sendUpdatedSignals();
+
 	_updateRequested = false;
 }
 
@@ -183,7 +208,7 @@ SimpleProcessNode::onInputSet(const InputSetBase& signal, int numInput) {
 
 	_inputDirty[numInput] = true;
 
-	_outputsDirty = true;
+	setOutputsDirty();
 }
 
 void
@@ -194,7 +219,7 @@ SimpleProcessNode::onInputAdded(const InputAddedBase& signal, int numMultiInput)
 	// add a new dirty flag for this multi-input's new input
 	_multiInputDirty[numMultiInput].push_back(true);
 
-	_outputsDirty = true;
+	setOutputsDirty();
 }
 
 void
@@ -204,9 +229,10 @@ SimpleProcessNode::onMultiInputModified(const Modified& signal, int numInput, in
 
 	_multiInputDirty[numMultiInput][numInput] = true;
 
-	_outputsDirty = true;
+	setOutputsDirty();
 
-	_modified();
+	for (int i = 0; i < _numOutputs; i++)
+		_modified[i]();
 }
 
 void
@@ -234,23 +260,25 @@ SimpleProcessNode::onMultiInputUpdated(const Updated& signal, int numInput, int 
 	LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] all inputs are up-to-date, updating outputs" << std::endl;
 
 	// all inputs are up-to-date -- call user's update function
-	if (_outputsDirty) {
+	if (haveDirtyOutput()) {
 
 		updateOutputs();
-		_outputsDirty = false;
+		setOutputsDirty(false);
 
-	} else
+	} else {
+
 		LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] outputs are still up-to-date" << std::endl;
+	}
 
 	LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] sending updated signal" << std::endl;
 
-	// send Updated signal
-	_updated();
+	sendUpdatedSignals();
+
 	_updateRequested = false;
 }
 
 void
-SimpleProcessNode::onUpdate(const Update& signal) {
+SimpleProcessNode::onUpdate(const Update& signal, int numOutput) {
 
 	LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] input update requested by another process node" << std::endl;
 
@@ -266,18 +294,19 @@ SimpleProcessNode::onUpdate(const Update& signal) {
 
 		LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] I have no dirty input" << std::endl;
 
-		if (_outputsDirty) {
+		if (haveDirtyOutput()) {
 
 			updateOutputs();
-			_outputsDirty = false;
+			setOutputsDirty(false);
 
-		} else
+		} else {
+
 			LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] outputs are still up-to-date" << std::endl;
+		}
 
 		LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] sending updated signal" << std::endl;
 
-		// send Updated signal
-		_updated();
+		sendUpdatedSignals();
 	}
 }
 
@@ -302,6 +331,24 @@ SimpleProcessNode::sendUpdateSignals() {
 			}
 }
 
+void
+SimpleProcessNode::sendUpdatedSignals() {
+
+	// send updated to all outputs
+	for (int i = 0; i < _numOutputs; i++)
+		_updated[i]();
+}
+
+void
+SimpleProcessNode::sendModifiedSignals() {
+
+	// send modified to all outputs
+	// TODO: let the user decide, which outputs do get dirty on which input
+	// change
+	for (int i = 0; i < _numOutputs; i++)
+		_modified[i]();
+}
+
 bool
 SimpleProcessNode::haveDirtyInput() {
 
@@ -317,6 +364,23 @@ SimpleProcessNode::haveDirtyInput() {
 				return true;
 
 	return false;
+}
+
+bool
+SimpleProcessNode::haveDirtyOutput() {
+
+	for (int i = 0; i < _numOutputs; i++)
+		if (_outputDirty[i])
+			return true;
+
+	return false;
+}
+
+void
+SimpleProcessNode::setOutputsDirty(bool dirty) {
+
+	for (int i = 0; i < _outputDirty.size(); i++)
+		_outputDirty[i] = dirty;
 }
 
 }
