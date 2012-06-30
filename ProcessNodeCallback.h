@@ -16,8 +16,8 @@ class ProcessNodeCallback : public signals::Callback<SignalType, ProcessNodeTrac
 
 public:
 
-	ProcessNodeCallback(ProcessNode* processNode, boost::function<void(SignalType&)> callback) :
-		signals::Callback<SignalType, ProcessNodeTracking, CastingPolicy>(callback) {
+	ProcessNodeCallback(ProcessNode* processNode, boost::function<void(SignalType&)> callback, signals::CallbackInvocation invocation) :
+		signals::Callback<SignalType, ProcessNodeTracking, CastingPolicy>(callback, invocation) {
 
 		ProcessNodeTracking::track(processNode);
 	}

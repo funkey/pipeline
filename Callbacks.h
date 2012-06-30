@@ -28,24 +28,27 @@ class Callbacks : public CallbacksBase {
 
 public:
 
-	Callbacks(multi_callback_type multiCallback) :
-		_multiCallback(multiCallback) {}
+	Callbacks(multi_callback_type multiCallback, signals::CallbackInvocation invocation) :
+		_multiCallback(multiCallback),
+		_invocation(invocation) {}
 
 	void registerAtInput(InputBase& input, unsigned int numInput) {
 
-		signals::Callback<SignalType> callback(boost::bind(_multiCallback, _1, numInput));
+		signals::Callback<SignalType> callback(boost::bind(_multiCallback, _1, numInput), _invocation);
 		input.registerBackwardCallback(callback);
 	}
 
 	void registerAtInput(InputBase& input, unsigned int numInput, ProcessNode* processNode) {
 
 		boost::function<void(SignalType&)> callback = boost::bind(_multiCallback, _1, numInput);
-		input.registerBackwardCallback(callback, processNode);
+		input.registerBackwardCallback(callback, processNode, _invocation);
 	}
 
 private:
 
 	multi_callback_type _multiCallback;
+
+	signals::CallbackInvocation _invocation;
 };
 
 } // namespace pipeline

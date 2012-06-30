@@ -114,9 +114,9 @@ public:
 	 *                    should be called.
 	 */
 	template <class T, typename SignalType>
-	void registerBackwardCallback(void (T::*callback)(SignalType&), T* processNode) {
+	void registerBackwardCallback(void (T::*callback)(SignalType&), T* processNode, signals::CallbackInvocation invocation = signals::Default) {
 
-		ProcessNodeCallback<SignalType>* processNodeCallback = new ProcessNodeCallback<SignalType>(processNode, boost::bind(callback, static_cast<T*>(processNode), _1));
+		ProcessNodeCallback<SignalType>* processNodeCallback = new ProcessNodeCallback<SignalType>(processNode, boost::bind(callback, static_cast<T*>(processNode), _1), invocation);
 
 		registerBackwardCallback(*processNodeCallback);
 
@@ -132,9 +132,9 @@ public:
 	 * @param processNode A ProcessNode to track.
 	 */
 	template <typename SignalType>
-	void registerBackwardCallback(boost::function<void(SignalType&)> callback, ProcessNode* processNode) {
+	void registerBackwardCallback(boost::function<void(SignalType&)> callback, ProcessNode* processNode, signals::CallbackInvocation invocation = signals::Default) {
 
-		ProcessNodeCallback<SignalType>* processNodeCallback = new ProcessNodeCallback<SignalType>(processNode, callback);
+		ProcessNodeCallback<SignalType>* processNodeCallback = new ProcessNodeCallback<SignalType>(processNode, callback, invocation);
 
 		registerBackwardCallback(*processNodeCallback);
 

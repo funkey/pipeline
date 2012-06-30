@@ -35,8 +35,8 @@ SimpleProcessNode::registerInput(InputBase& input, std::string name, InputType i
 	boost::function<void(Updated&)>  funOnUpdated  = boost::bind(&SimpleProcessNode::onInputUpdated,  this, _1, numInput);
 
 	// register the callbacks and setup process node tracking
-	input.registerBackwardCallback(funOnModified, this);
-	input.registerBackwardCallback(funOnUpdated,  this);
+	input.registerBackwardCallback(funOnModified, this, signals::Transparent);
+	input.registerBackwardCallback(funOnUpdated,  this, signals::Transparent);
 
 	if (inputType == Optional) {
 
@@ -48,7 +48,7 @@ SimpleProcessNode::registerInput(InputBase& input, std::string name, InputType i
 		// this is taken care of with the following callback.
 		boost::function<void(InputSetBase&)> funOnInputSet = boost::bind(&SimpleProcessNode::onInputSet, this, _1, numInput);
 
-		input.registerBackwardCallback(funOnInputSet, this);
+		input.registerBackwardCallback(funOnInputSet, this, signals::Transparent);
 	}
 
 	// register the appropriate update signal for this input
@@ -77,9 +77,9 @@ SimpleProcessNode::registerInputs(MultiInput& input, std::string name) {
 	boost::function<void(Updated&,  unsigned int)> funOnUpdated    = boost::bind(&SimpleProcessNode::onMultiInputUpdated,  this, _1, _2, numMultiInput);
 
 	// register the callbacks and setup process node tracking
-	input.registerBackwardCallback(funOnInputAdded, this);
-	input.registerBackwardCallbacks(funOnModified, this);
-	input.registerBackwardCallbacks(funOnUpdated,  this);
+	input.registerBackwardCallback(funOnInputAdded, this, signals::Transparent);
+	input.registerBackwardCallbacks(funOnModified, this, signals::Transparent);
+	input.registerBackwardCallbacks(funOnUpdated,  this, signals::Transparent);
 
 	// register the appropriate update signal for this input
 	input.registerBackwardSlots(*_multiInputUpdates[numMultiInput]);
@@ -106,7 +106,7 @@ SimpleProcessNode::registerOutput(OutputBase& output, std::string name) {
 	// create a signal callbacks that stores the number of the output with it
 	boost::function<void(Update&)> funOnUpdate = boost::bind(&SimpleProcessNode::onUpdate, this, _1, numOutput);
 
-	output.registerForwardCallback(funOnUpdate, this);
+	output.registerForwardCallback(funOnUpdate, this, signals::Transparent);
 
 	// register the appropriate update signal for this output
 	output.registerForwardSlot(_modified[numOutput]);
