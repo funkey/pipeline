@@ -105,7 +105,7 @@ public:
 	 *                    should be called.
 	 */
 	template <class T, typename SignalType>
-	void registerBackwardCallbacks(void (T::*callback)(SignalType&, unsigned int), T* processNode, signals::CallbackInvocation invocation = signals::Default) {
+	void registerBackwardCallbacks(void (T::*callback)(SignalType&, unsigned int), T* processNode, signals::CallbackInvocation invocation = signals::Exclusive) {
 
 		boost::function<void(SignalType&, unsigned int)> multiCallback = boost::bind(callback, static_cast<T*>(processNode), _1, _2);
 
@@ -121,7 +121,7 @@ public:
 	 * @param processNode A ProcessNode to track.
 	 */
 	template <typename SignalType>
-	void registerBackwardCallbacks(boost::function<void(SignalType&, unsigned int)> callback, ProcessNode* processNode, signals::CallbackInvocation invocation = signals::Default) {
+	void registerBackwardCallbacks(boost::function<void(SignalType&, unsigned int)> callback, ProcessNode* processNode, signals::CallbackInvocation invocation = signals::Exclusive) {
 
 		_multiCallbacks.push_back(std::make_pair(new Callbacks<SignalType>(callback, invocation), processNode));
 	}
@@ -132,7 +132,7 @@ public:
 	 * @param callback A boost function object.
 	 */
 	template <typename SignalType>
-	void registerBackwardCallbacks(boost::function<void(SignalType&, unsigned int)> callback, signals::CallbackInvocation invocation = signals::Default) {
+	void registerBackwardCallbacks(boost::function<void(SignalType&, unsigned int)> callback, signals::CallbackInvocation invocation = signals::Exclusive) {
 
 		_multiCallbacks.push_back(std::make_pair(new Callbacks<SignalType>(callback, invocation), static_cast<ProcessNode*>(0)));
 	}
