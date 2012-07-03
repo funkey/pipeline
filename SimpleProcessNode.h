@@ -46,7 +46,7 @@ protected:
 	 * Explicitly update the inputs of this process node. Usually, you don't
 	 * need to call this function yourself. It will be called automatically
 	 * whenever another process node is asking for an update of your output.
-	 * Howevern, if this is a sink node, e.g. file writer, and you want to make
+	 * However, if this is a sink node, e.g. file writer, and you want to make
 	 * sure all the inputs are up-to-date before writing, you would call this
 	 * method in your write method.
 	 */
