@@ -44,11 +44,14 @@ SimpleProcessNode::registerInput(InputBase& input, std::string name, InputType i
 		// be computed, regardless of their presence).
 		_inputDirty[numInput] = false;
 
-		// However, if an optional input is set, it has to be marked dirty --
-		// this is taken care of with the following callback.
+		// However, if an optional input is set, it has to be marked dirty,
+		// except it was set to a shared pointer -- this is taken care of with
+		// the following callbacks.
 		boost::function<void(InputSetBase&)> funOnInputSet = boost::bind(&SimpleProcessNode::onInputSet, this, _1, numInput);
+		boost::function<void(InputSetBase&)> funOnInputSetToSharedPointer = boost::bind(&SimpleProcessNode::onInputSetToSharedPointer, this, _1, numInput);
 
 		input.registerBackwardCallback(funOnInputSet, this, signals::Transparent);
+		input.registerBackwardCallback(funOnInputSetToSharedPointer, this, signals::Transparent);
 	}
 
 	// register the appropriate update signal for this input
@@ -207,6 +210,15 @@ void
 SimpleProcessNode::onInputSet(const InputSetBase& signal, int numInput) {
 
 	_inputDirty[numInput] = true;
+
+	setOutputsDirty();
+}
+
+void
+SimpleProcessNode::onInputSetToSharedPointer(const InputSetBase& signal, int numInput) {
+
+	// shared pointer inputs are never dirty
+	_inputDirty[numInput] = false;
 
 	setOutputsDirty();
 }

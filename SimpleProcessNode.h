@@ -72,6 +72,8 @@ private:
 
 	void onInputSet(const InputSetBase& signal, int numInput);
 
+	void onInputSetToSharedPointer(const InputSetBase& signal, int numInput);
+
 	void onInputAdded(const InputAddedBase& signal, int numMultiInput);
 
 	void onMultiInputModified(const Modified& signal, int numInput, int numMultiInput);

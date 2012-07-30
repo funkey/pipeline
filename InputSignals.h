@@ -44,6 +44,22 @@ private:
 };
 
 /**
+ * Input set notification for shared pointer inputs. Internally elicited,
+ * whenever one of the setInput(...) methods of a ProcessNode has been called
+ * with a shared pointer.
+ */
+template <typename DataType>
+class InputSetToSharedPointer : public InputSet<DataType> {
+
+public:
+
+	InputSetToSharedPointer() {};
+
+	InputSetToSharedPointer(boost::shared_ptr<DataType> data) :
+		InputSet<DataType>(data) {}
+};
+
+/**
  * Base for the specialized InputUnset classes. Use this signal, if you are not
  * interested in the type of the input.
  */
