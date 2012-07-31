@@ -195,7 +195,6 @@ struct _input_added_dispatch {};
 
 template <typename DataType>
 struct _input_added_dispatch<true, DataType> {
-
 	typedef InputAdded<DataType> value;
 };
 
@@ -208,6 +207,24 @@ struct _input_added_dispatch<false, DataType> {
 template <typename DataType>
 class input_added_dispatch : public _input_added_dispatch<boost::is_base_of<Data, DataType>::value, DataType> {};
 
+template <bool, typename DataType>
+struct _input_added_to_shared_pointer_dispatch {};
+
+template <typename DataType>
+struct _input_added_to_shared_pointer_dispatch<true, DataType> {
+	typedef InputAddedToSharedPointer<DataType> value;
+};
+
+template <typename DataType>
+struct _input_added_to_shared_pointer_dispatch<false, DataType> {
+
+	typedef InputAddedToSharedPointer<Wrap<DataType> > value;
+};
+
+template <typename DataType>
+class input_added_to_shared_pointer_dispatch : public _input_added_to_shared_pointer_dispatch<boost::is_base_of<Data, DataType>::value, DataType> {};
+
+
 template <typename DataType>
 class Inputs : public MultiInput {
 
@@ -215,7 +232,8 @@ class Inputs : public MultiInput {
 
 	// this type is InputAdded<Wrap<DataType> > if DataType not base of Data,
 	// InputAdded<DataType> otherwise
-	typedef typename input_added_dispatch<DataType>::value input_added_type;
+	typedef typename input_added_dispatch<DataType>::value                   input_added_type;
+	typedef typename input_added_to_shared_pointer_dispatch<DataType>::value input_added_to_shared_pointer_type;
 
 public:
 
@@ -227,6 +245,7 @@ public:
 		_internalConnected(false) {
 
 		_internalSender.registerSlot(_inputAdded);
+		_internalSender.registerSlot(_inputAddedToSharedPointer);
 	}
 
 	bool accept(OutputBase& output) {
@@ -357,16 +376,11 @@ private:
 
 			establishingSignalling(output, newInput);
 
-			LOG_ALL(pipelinelog) << "[" << typeName(this) << "] sending InputAdded" << std::endl;
-
-			// inform about new input
-			_inputAdded(input_added_type(newInput));
-
 			return true;
 		}
 	}
 
-	void establishingSignalling(OutputBase& output, InputBase& newInput) {
+	void establishingSignalling(OutputBase& output, Input<DataType>& newInput) {
 
 		// establish input-output signalling connections to Slots
 		output.getForwardSender().connect(newInput.getBackwardReceiver());
@@ -375,11 +389,21 @@ private:
 		// establish input-output signalling connections to Slot
 		output.getForwardSender().connect(getBackwardReceiver());
 		getBackwardSender().connect(output.getForwardReceiver());
+
+		LOG_ALL(pipelinelog) << "[" << typeName(this) << "] sending InputAdded" << std::endl;
+
+		// inform about new input
+		_inputAdded(input_added_type(newInput));
 	}
 
-	void establishingSignalling(boost::shared_ptr<Data> data, InputBase& newInput) {
+	void establishingSignalling(boost::shared_ptr<Data> data, Input<DataType>& newInput) {
 
 		// no signalling for data pointers as inputs
+
+		LOG_ALL(pipelinelog) << "[" << typeName(this) << "] sending InputAddedToSharedPointer" << std::endl;
+
+		// inform about new input
+		_inputAddedToSharedPointer(input_added_to_shared_pointer_type(newInput));
 	}
 
 	// inherited from InputBase, but not used in Inputs
@@ -392,7 +416,8 @@ private:
 	inputs_type _inputs;
 
 	// slot to inform about a new input
-	signals::Slot<const input_added_type> _inputAdded;
+	signals::Slot<const input_added_type>                   _inputAdded;
+	signals::Slot<const input_added_to_shared_pointer_type> _inputAddedToSharedPointer;
 
 	// this sender is used to inform about changes in the input
 	signals::Sender _internalSender;

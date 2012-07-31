@@ -130,6 +130,22 @@ private:
 };
 
 /**
+ * Input add notification. Internally eliceted, whenever one of the
+ * addInput(...) methods of a ProcessNode has been called with a shared
+ * pointer.
+ */
+template <typename DataType>
+class InputAddedToSharedPointer : public InputAdded<DataType> {
+
+public:
+
+	InputAddedToSharedPointer() {};
+
+	InputAddedToSharedPointer(boost::shared_ptr<DataType> data) :
+		InputAdded<DataType>(data) {}
+};
+
+/**
  * Base for the specialized InputRemoved classes. Use this signal, if you are not
  * interested in the type of the input.
  */
