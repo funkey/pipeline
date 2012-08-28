@@ -355,6 +355,12 @@ public:
 
 		return InputImpl<Wrap<T> >::get()->get();
 	}
+
+	// transparent -> operator
+	T* operator->() const {
+
+		return &(InputImpl<Wrap<T> >::get()->get());
+	}
 };
 
 template <typename T>
