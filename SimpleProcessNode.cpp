@@ -9,7 +9,8 @@ namespace pipeline {
 SimpleProcessNode::SimpleProcessNode() :
 	_numInputs(0),
 	_numMultiInputs(0),
-	_numOutputs(0) {}
+	_numOutputs(0),
+	_updateRequested(false) {}
 
 SimpleProcessNode::~SimpleProcessNode() {
 
