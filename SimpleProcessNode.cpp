@@ -8,19 +8,22 @@ logger::LogChannel simpleprocessnodelog("simpleprocessnodelog");
 
 namespace pipeline {
 
-SimpleProcessNode::SimpleProcessNode() :
+template <typename LockingStrategy>
+SimpleProcessNodeImpl<LockingStrategy>::SimpleProcessNodeImpl() :
 	_numInputs(0),
 	_numMultiInputs(0),
 	_numOutputs(0) {}
 
-SimpleProcessNode::~SimpleProcessNode() {
+template <typename LockingStrategy>
+SimpleProcessNodeImpl<LockingStrategy>::~SimpleProcessNodeImpl() {
 
 	foreach (signals::SlotsBase* slot, _multiInputUpdates)
 		delete slot;
 }
 
+template <typename LockingStrategy>
 void
-SimpleProcessNode::registerInput(InputBase& input, std::string name, InputType inputType) {
+SimpleProcessNodeImpl<LockingStrategy>::registerInput(InputBase& input, std::string name, InputType inputType) {
 
 	LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] got a new input " << name << std::endl;
 
@@ -33,7 +36,7 @@ SimpleProcessNode::registerInput(InputBase& input, std::string name, InputType i
 	_inputUpdate.addSlot();
 
 	// create signal callbacks that store the number of the input with them
-	boost::function<void(Modified&)> funOnModified = boost::bind(&SimpleProcessNode::onInputModified, this, _1, numInput);
+	boost::function<void(Modified&)> funOnModified = boost::bind(&SimpleProcessNodeImpl<LockingStrategy>::onInputModified, this, _1, numInput);
 
 	// register the callbacks and setup process node tracking
 	input.registerBackwardCallback(funOnModified, this, signals::Transparent);
@@ -47,8 +50,8 @@ SimpleProcessNode::registerInput(InputBase& input, std::string name, InputType i
 		// However, if an optional input is set, it has to be marked dirty,
 		// except it was set to a shared pointer -- this is taken care of with
 		// the following callbacks.
-		boost::function<void(InputSetBase&)> funOnInputSet = boost::bind(&SimpleProcessNode::onInputSet, this, _1, numInput);
-		boost::function<void(InputSetBase&)> funOnInputSetToSharedPointer = boost::bind(&SimpleProcessNode::onInputSetToSharedPointer, this, _1, numInput);
+		boost::function<void(InputSetBase&)> funOnInputSet = boost::bind(&SimpleProcessNodeImpl<LockingStrategy>::onInputSet, this, _1, numInput);
+		boost::function<void(InputSetBase&)> funOnInputSetToSharedPointer = boost::bind(&SimpleProcessNodeImpl<LockingStrategy>::onInputSetToSharedPointer, this, _1, numInput);
 
 		input.registerBackwardCallback(funOnInputSet, this, signals::Transparent);
 		input.registerBackwardCallback(funOnInputSetToSharedPointer, this, signals::Transparent);
@@ -62,8 +65,9 @@ SimpleProcessNode::registerInput(InputBase& input, std::string name, InputType i
 	setOutputsDirty();
 }
 
+template <typename LockingStrategy>
 void
-SimpleProcessNode::registerInputs(MultiInput& input, std::string name) {
+SimpleProcessNodeImpl<LockingStrategy>::registerInputs(MultiInput& input, std::string name) {
 
 	LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] got a new multi-input " << name << std::endl;
 
@@ -75,8 +79,8 @@ SimpleProcessNode::registerInputs(MultiInput& input, std::string name) {
 	_multiInputUpdates.push_back(new signals::Slots<Update>());
 
 	// create signal callbacks that store the number of the multi-input with them
-	boost::function<void(InputAddedBase&)>         funOnInputAdded = boost::bind(&SimpleProcessNode::onInputAdded,         this, _1, numMultiInput);
-	boost::function<void(Modified&, unsigned int)> funOnModified   = boost::bind(&SimpleProcessNode::onMultiInputModified, this, _1, _2, numMultiInput);
+	boost::function<void(InputAddedBase&)>         funOnInputAdded = boost::bind(&SimpleProcessNodeImpl<LockingStrategy>::onInputAdded,         this, _1, numMultiInput);
+	boost::function<void(Modified&, unsigned int)> funOnModified   = boost::bind(&SimpleProcessNodeImpl<LockingStrategy>::onMultiInputModified, this, _1, _2, numMultiInput);
 
 	// register the callbacks and setup process node tracking
 	input.registerBackwardCallback(funOnInputAdded, this, signals::Transparent);
@@ -90,8 +94,9 @@ SimpleProcessNode::registerInputs(MultiInput& input, std::string name) {
 	setOutputsDirty();
 }
 
+template <typename LockingStrategy>
 void
-SimpleProcessNode::registerOutput(OutputBase& output, std::string name) {
+SimpleProcessNodeImpl<LockingStrategy>::registerOutput(OutputBase& output, std::string name) {
 
 	LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] got a new output " << name << std::endl;
 
@@ -104,7 +109,7 @@ SimpleProcessNode::registerOutput(OutputBase& output, std::string name) {
 	_modified.addSlot();
 
 	// create a signal callbacks that stores the number of the output with it
-	boost::function<void(Update&)> funOnUpdate = boost::bind(&SimpleProcessNode::onUpdate, this, _1, numOutput);
+	boost::function<void(Update&)> funOnUpdate = boost::bind(&SimpleProcessNodeImpl<LockingStrategy>::onUpdate, this, _1, numOutput);
 
 	output.registerForwardCallback(funOnUpdate, this, signals::Transparent);
 
@@ -120,8 +125,9 @@ SimpleProcessNode::registerOutput(OutputBase& output, std::string name) {
 /**
  * Explicitly update this process node.
  */
+template <typename LockingStrategy>
 void
-SimpleProcessNode::updateInputs() {
+SimpleProcessNodeImpl<LockingStrategy>::updateInputs() {
 
 	boost::mutex::scoped_lock lock(_updateMutex);
 
@@ -132,8 +138,9 @@ SimpleProcessNode::updateInputs() {
 	// TODO (multithreading): block and wait for all the inputs to update
 };
 
+template <typename LockingStrategy>
 void
-SimpleProcessNode::setDirty(OutputBase& output) {
+SimpleProcessNodeImpl<LockingStrategy>::setDirty(OutputBase& output) {
 
 	// make sure we don't miss this notification by a race condition
 	boost::mutex::scoped_lock lock(_updateMutex);
@@ -153,8 +160,9 @@ SimpleProcessNode::setDirty(OutputBase& output) {
 	_modified[outputNum]();
 }
 
+template <typename LockingStrategy>
 void
-SimpleProcessNode::onInputModified(const Modified& signal, int numInput) {
+SimpleProcessNodeImpl<LockingStrategy>::onInputModified(const Modified& signal, int numInput) {
 
 	LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] input " << numInput << " was modified" << std::endl;
 
@@ -165,16 +173,18 @@ SimpleProcessNode::onInputModified(const Modified& signal, int numInput) {
 	sendModifiedSignals();
 }
 
+template <typename LockingStrategy>
 void
-SimpleProcessNode::onInputSet(const InputSetBase& signal, int numInput) {
+SimpleProcessNodeImpl<LockingStrategy>::onInputSet(const InputSetBase& signal, int numInput) {
 
 	_inputDirty[numInput] = true;
 
 	setOutputsDirty();
 }
 
+template <typename LockingStrategy>
 void
-SimpleProcessNode::onInputSetToSharedPointer(const InputSetBase& signal, int numInput) {
+SimpleProcessNodeImpl<LockingStrategy>::onInputSetToSharedPointer(const InputSetBase& signal, int numInput) {
 
 	// shared pointer inputs are never dirty
 	_inputDirty[numInput] = false;
@@ -182,8 +192,9 @@ SimpleProcessNode::onInputSetToSharedPointer(const InputSetBase& signal, int num
 	setOutputsDirty();
 }
 
+template <typename LockingStrategy>
 void
-SimpleProcessNode::onInputAdded(const InputAddedBase& signal, int numMultiInput) {
+SimpleProcessNodeImpl<LockingStrategy>::onInputAdded(const InputAddedBase& signal, int numMultiInput) {
 
 	LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] multi-input " << numMultiInput << " got a new input" << std::endl;
 
@@ -193,8 +204,9 @@ SimpleProcessNode::onInputAdded(const InputAddedBase& signal, int numMultiInput)
 	setOutputsDirty();
 }
 
+template <typename LockingStrategy>
 void
-SimpleProcessNode::onMultiInputModified(const Modified& signal, int numInput, int numMultiInput) {
+SimpleProcessNodeImpl<LockingStrategy>::onMultiInputModified(const Modified& signal, int numInput, int numMultiInput) {
 
 	LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] multi-input " << numMultiInput << " was modified in input " << numInput << std::endl;
 
@@ -206,8 +218,9 @@ SimpleProcessNode::onMultiInputModified(const Modified& signal, int numInput, in
 		_modified[i]();
 }
 
+template <typename LockingStrategy>
 void
-SimpleProcessNode::onUpdate(const Update& signal, int numOutput) {
+SimpleProcessNodeImpl<LockingStrategy>::onUpdate(const Update& signal, int numOutput) {
 
 	boost::mutex::scoped_lock lock(_updateMutex);
 
@@ -225,7 +238,9 @@ SimpleProcessNode::onUpdate(const Update& signal, int numOutput) {
 
 	if (haveDirtyOutput()) {
 
-		updateOutputs();
+		// lock inputs, outputs, and update outputs
+		lockInputs(0);
+
 		setOutputsDirty(false);
 
 	} else {
@@ -234,8 +249,9 @@ SimpleProcessNode::onUpdate(const Update& signal, int numOutput) {
 	}
 }
 
+template <typename LockingStrategy>
 void
-SimpleProcessNode::sendUpdateSignals() {
+SimpleProcessNodeImpl<LockingStrategy>::sendUpdateSignals() {
 
 	boost::thread_group workers;
 
@@ -268,8 +284,9 @@ SimpleProcessNode::sendUpdateSignals() {
 	}
 }
 
+template <typename LockingStrategy>
 void
-SimpleProcessNode::sendModifiedSignals() {
+SimpleProcessNodeImpl<LockingStrategy>::sendModifiedSignals() {
 
 	// send modified to all outputs
 	// TODO: let the user decide, which outputs do get dirty on which input
@@ -278,8 +295,9 @@ SimpleProcessNode::sendModifiedSignals() {
 		_modified[i]();
 }
 
+template <typename LockingStrategy>
 bool
-SimpleProcessNode::haveDirtyInput() {
+SimpleProcessNodeImpl<LockingStrategy>::haveDirtyInput() {
 
 	// check inputs
 	for (int i = 0; i < _numInputs; i++)
@@ -295,8 +313,9 @@ SimpleProcessNode::haveDirtyInput() {
 	return false;
 }
 
+template <typename LockingStrategy>
 bool
-SimpleProcessNode::haveDirtyOutput() {
+SimpleProcessNodeImpl<LockingStrategy>::haveDirtyOutput() {
 
 	for (int i = 0; i < _numOutputs; i++)
 		if (_outputDirty[i])
@@ -305,11 +324,14 @@ SimpleProcessNode::haveDirtyOutput() {
 	return false;
 }
 
+template <typename LockingStrategy>
 void
-SimpleProcessNode::setOutputsDirty(bool dirty) {
+SimpleProcessNodeImpl<LockingStrategy>::setOutputsDirty(bool dirty) {
 
 	for (int i = 0; i < _outputDirty.size(); i++)
 		_outputDirty[i] = dirty;
 }
+
+template class SimpleProcessNodeImpl<FullLockingStrategy>;
 
 }

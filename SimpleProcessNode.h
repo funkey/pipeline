@@ -13,13 +13,64 @@ enum InputType {
 	Optional
 };
 
-class SimpleProcessNode : public ProcessNode {
+/**
+ * Full input/output locking strategy. Safe, but potentially inefficient,
+ * locking mechanism for output updates. Allocates read locks on all inputs and
+ * write locks on all outputs before calling updateOutputs().
+ */
+class FullLockingStrategy {
 
 public:
 
-	SimpleProcessNode();
+	void lock(InputBase& input, boost::function<void()> next) {
 
-	virtual ~SimpleProcessNode();
+		if (input.hasAssignedOutput()) {
+
+			boost::shared_lock<boost::shared_mutex> lock(input.getAssignedSharedPtr()->getMutex());
+
+			next();
+
+		} else {
+
+			next();
+		}
+	}
+
+	void lock(OutputBase& output, boost::function<void()> next) {
+
+		boost::unique_lock<boost::shared_mutex> lock(output.getData()->getMutex());
+
+		next();
+	}
+};
+
+/**
+ * Don't perform input/output locking on updateOutputs. Use this strategy if you
+ * want to control which inputs and outputs to lock yourself.
+ */
+class NoLockingStrategy {
+
+public:
+
+	void lock(InputBase& input, boost::function<void()> next) {
+
+		next();
+	}
+
+	void lock(OutputBase& output, boost::function<void()> next) {
+
+		next();
+	}
+};
+
+template <class LockingStrategy = FullLockingStrategy>
+class SimpleProcessNodeImpl : public LockingStrategy, public ProcessNode {
+
+public:
+
+	SimpleProcessNodeImpl();
+
+	virtual ~SimpleProcessNodeImpl();
 
 protected:
 
@@ -84,6 +135,28 @@ private:
 
 	void onMultiInputModified(const Modified& signal, int numInput, int numMultiInput);
 
+	void lockInputs(int i) {
+
+		if (i == _numInputs) {
+
+			lockOutputs(0);
+			return;
+		}
+
+		LockingStrategy::lock(getInput(i), boost::bind(&SimpleProcessNodeImpl::lockInputs, this, i + 1));
+	}
+
+	void lockOutputs(int i) {
+
+		if (i == _numOutputs) {
+
+			updateOutputs();
+			return;
+		}
+
+		LockingStrategy::lock(getOutput(i), boost::bind(&SimpleProcessNodeImpl::lockOutputs, this, i + 1));
+	}
+
 	void onUpdate(const Update& signal, int numOutput);
 
 	// thread save (by locking)
@@ -130,6 +203,8 @@ private:
 	// a mutex to protect concurrent updates
 	boost::mutex _updateMutex;
 };
+
+typedef SimpleProcessNodeImpl<FullLockingStrategy> SimpleProcessNode;
 
 }
 
