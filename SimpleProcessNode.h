@@ -76,8 +76,6 @@ private:
 
 	void onInputModified(const Modified& signal, int numInput);
 
-	void onInputUpdated(const Updated& signal, int numInput);
-
 	void onInputSet(const InputSetBase& signal, int numInput);
 
 	void onInputSetToSharedPointer(const InputSetBase& signal, int numInput);
@@ -86,14 +84,10 @@ private:
 
 	void onMultiInputModified(const Modified& signal, int numInput, int numMultiInput);
 
-	void onMultiInputUpdated(const Updated& signal, int numInput, int numMultiInput);
-
 	void onUpdate(const Update& signal, int numOutput);
 
 	// thread save (by locking)
 	void sendUpdateSignals();
-
-	void sendUpdatedSignals();
 
 	void sendModifiedSignals();
 
@@ -115,9 +109,8 @@ private:
 	// a vector of slots for each multi-input
 	std::vector<signals::Slots<Update>*> _multiInputUpdates;
 
-	// one modified and updated slot for each output
+	// one modified slot for each output
 	signals::Slots<Modified> _modified;
-	signals::Slots<Updated>  _updated;
 
 	// the current number of inputs
 	int _numInputs;
@@ -131,17 +124,11 @@ private:
 	// indicates that an output has to be recomputed
 	std::vector<bool> _outputDirty;
 
-	// indicates that someone was asking for an update of an output
-	bool _updateRequested;
-
 	// a look-up table from outputs to their number
 	std::map<OutputBase*, unsigned int> _outputNums;
 
-	// a mutex to protect concurrent input updates
-	boost::mutex _inputUpdateMutex;
-
-	// a mutex to protect concurrent output updates
-	boost::mutex _outputUpdateMutex;
+	// a mutex to protect concurrent updates
+	boost::mutex _updateMutex;
 };
 
 }

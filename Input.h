@@ -4,7 +4,6 @@
 #include <boost/type_traits.hpp>
 
 #include <signals/Callback.h>
-#include <pipeline/signals/Updated.h>
 #include "Data.h"
 #include "Output.h"
 #include "InputSignals.h"
@@ -211,12 +210,10 @@ public:
 
 	InputImpl() :
 		_inputSet(boost::make_shared<signals::Slot<const InputSet<DataType> > >()),
-		_inputSetToSharedPointer(boost::make_shared<signals::Slot<const InputSetToSharedPointer<DataType> > >()),
-		_updated(boost::make_shared<signals::Slot<const Updated> >()) {
+		_inputSetToSharedPointer(boost::make_shared<signals::Slot<const InputSetToSharedPointer<DataType> > >()) {
 
 		_internalSender.registerSlot(*_inputSet);
 		_internalSender.registerSlot(*_inputSetToSharedPointer);
-		_internalSender.registerSlot(*_updated);
 	}
 
 	bool accept(OutputBase& output) {
@@ -276,9 +273,6 @@ public:
 			// inform about new input
 			(*_inputSetToSharedPointer)(InputSetToSharedPointer<DataType>(casted_data));
 
-			// send an updated signal along to mark this input as non-dirty
-			(*_updated)();
-
 			return true;
 		}
 
@@ -331,9 +325,6 @@ private:
 
 	// slot to send a signal when the input was set to a shared pointer
 	boost::shared_ptr<signals::Slot<const InputSetToSharedPointer<DataType> > > _inputSetToSharedPointer;
-
-	// updated slot, used for shared pointer inputs
-	boost::shared_ptr<signals::Slot<const Updated> >             _updated;
 
 	// internally used sender to inform about a new input
 	signals::Sender _internalSender;
