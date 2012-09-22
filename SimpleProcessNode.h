@@ -1,6 +1,8 @@
 #ifndef PIPELINE_SIMPLE_PROCESS_NODE_H__
 #define PIPELINE_SIMPLE_PROCESS_NODE_H__
 
+#include <boost/thread/mutex.hpp>
+
 #include <pipeline/signals/all.h>
 
 namespace pipeline {
@@ -39,6 +41,8 @@ protected:
 	/**
 	 * Overwrite this method in derived classes to (re)compute the output.
 	 * Within this method you can assume that all inputs are up-to-date.
+	 *
+	 * Thread save (by locking).
 	 */
 	virtual void updateOutputs() = 0;
 
@@ -49,6 +53,8 @@ protected:
 	 * However, if this is a sink node, e.g. file writer, and you want to make
 	 * sure all the inputs are up-to-date before writing, you would call this
 	 * method in your write method.
+	 *
+	 * Thread save.
 	 */
 	void updateInputs();
 
@@ -61,6 +67,8 @@ protected:
 	 * outputs that depend on 'factor' you would call this method.
 	 *
 	 * @param output The output to set dirty.
+	 *
+	 * Thread save (by locking). Don't call from updateOutputs().
 	 */
 	void setDirty(OutputBase& output);
 
@@ -82,6 +90,7 @@ private:
 
 	void onUpdate(const Update& signal, int numOutput);
 
+	// thread save (by locking)
 	void sendUpdateSignals();
 
 	void sendUpdatedSignals();
@@ -127,6 +136,12 @@ private:
 
 	// a look-up table from outputs to their number
 	std::map<OutputBase*, unsigned int> _outputNums;
+
+	// a mutex to protect concurrent input updates
+	boost::mutex _inputUpdateMutex;
+
+	// a mutex to protect concurrent output updates
+	boost::mutex _outputUpdateMutex;
 };
 
 }

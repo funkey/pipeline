@@ -1,3 +1,5 @@
+#include <boost/thread/thread.hpp>
+
 #include "InputSignals.h"
 #include "ProcessNode.h"
 #include "SimpleProcessNode.h"
@@ -128,6 +130,8 @@ SimpleProcessNode::registerOutput(OutputBase& output, std::string name) {
 void
 SimpleProcessNode::updateInputs() {
 
+	boost::mutex::scoped_lock lock(_inputUpdateMutex);
+
 	LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] input update requested by user" << std::endl;
 
 	sendUpdateSignals();
@@ -137,6 +141,9 @@ SimpleProcessNode::updateInputs() {
 
 void
 SimpleProcessNode::setDirty(OutputBase& output) {
+
+	// make sure we don't miss this notification by a race condition
+	boost::mutex::scoped_lock lock(_outputUpdateMutex);
 
 	if (_outputNums.count(&output) == 0)
 		LOG_ERROR(simpleprocessnodelog)
@@ -170,6 +177,15 @@ SimpleProcessNode::onInputUpdated(const Updated& signal, int numInput) {
 
 	LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] input " << numInput << " was updated" << std::endl;
 
+	// if another thread is already here, there is nothing to do for us
+	// TODO: there is a race-condition here, resulting in the output being
+	// updated twice
+	if (!_inputDirty[numInput]) {
+
+		LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] this input is not dirty anymore -- skip updating outputs" << std::endl;
+		return;
+	}
+
 	// this input is up-to-date now
 	_inputDirty[numInput] = false;
 
@@ -189,15 +205,19 @@ SimpleProcessNode::onInputUpdated(const Updated& signal, int numInput) {
 
 	LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] all inputs are up-to-date, updating outputs" << std::endl;
 
-	// all inputs are up-to-date -- call user's update function if needed
-	if (haveDirtyOutput()) {
+	{
+		boost::mutex::scoped_lock lock(_outputUpdateMutex);
 
-		updateOutputs();
-		setOutputsDirty(false);
+		// all inputs are up-to-date -- call user's update function if needed
+		if (haveDirtyOutput()) {
 
-	} else {
+			updateOutputs();
+			setOutputsDirty(false);
 
-		LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] outputs are still up-to-date" << std::endl;
+		} else {
+
+			LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] outputs are still up-to-date" << std::endl;
+		}
 	}
 
 	LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] sending updated signal" << std::endl;
@@ -272,15 +292,19 @@ SimpleProcessNode::onMultiInputUpdated(const Updated& signal, int numInput, int 
 
 	LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] all inputs are up-to-date, updating outputs" << std::endl;
 
-	// all inputs are up-to-date -- call user's update function
-	if (haveDirtyOutput()) {
+	{
+		boost::mutex::scoped_lock lock(_outputUpdateMutex);
 
-		updateOutputs();
-		setOutputsDirty(false);
+		// all inputs are up-to-date -- call user's update function
+		if (haveDirtyOutput()) {
 
-	} else {
+			updateOutputs();
+			setOutputsDirty(false);
 
-		LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] outputs are still up-to-date" << std::endl;
+		} else {
+
+			LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] outputs are still up-to-date" << std::endl;
+		}
 	}
 
 	LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] sending updated signal" << std::endl;
@@ -293,29 +317,46 @@ SimpleProcessNode::onMultiInputUpdated(const Updated& signal, int numInput, int 
 void
 SimpleProcessNode::onUpdate(const Update& signal, int numOutput) {
 
-	LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] input update requested by another process node" << std::endl;
+	bool sendUpdated = false;
 
-	if (haveDirtyInput()) {
+	{
+		boost::mutex::scoped_lock lock(_inputUpdateMutex);
 
-		LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] I have some dirty inputs -- sending update signals" << std::endl;
+		LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] input update requested by another process node" << std::endl;
 
-		_updateRequested = true;
+		if (haveDirtyInput()) {
 
-		sendUpdateSignals();
+			LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] I have some dirty inputs -- sending update signals" << std::endl;
 
-	} else {
+			_updateRequested = true;
 
-		LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] I have no dirty input" << std::endl;
-
-		if (haveDirtyOutput()) {
-
-			updateOutputs();
-			setOutputsDirty(false);
+			sendUpdateSignals();
 
 		} else {
 
-			LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] outputs are still up-to-date" << std::endl;
+			LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] I have no dirty input" << std::endl;
+
+			{
+
+				boost::mutex::scoped_lock lock(_outputUpdateMutex);
+
+				if (haveDirtyOutput()) {
+
+					updateOutputs();
+					setOutputsDirty(false);
+
+				} else {
+
+					LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] outputs are still up-to-date" << std::endl;
+				}
+			}
+
+			// we updated the output -- inform upstream nodes
+			sendUpdated = true;
 		}
+	}
+
+	if (sendUpdated) {
 
 		LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] sending updated signal" << std::endl;
 
@@ -326,13 +367,24 @@ SimpleProcessNode::onUpdate(const Update& signal, int numOutput) {
 void
 SimpleProcessNode::sendUpdateSignals() {
 
+	boost::thread_group workers;
+
 	// ask all dirty inputs for updates
 	for (int i = 0; i < _numInputs; i++)
 		if (_inputDirty[i]) {
 
 			LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] sending update signal to input " << i << std::endl;
-			_inputUpdate[i]();
+
+			LOG_DEBUG(simpleprocessnodelog) << "[" << typeName(this) << "] starting worker thread..." << std::endl;
+			workers.create_thread(boost::ref(_inputUpdate[i]));
 		}
+
+	if (workers.size() > 0) {
+
+		LOG_DEBUG(simpleprocessnodelog) << "[" << typeName(this) << "] waiting for all workers to finish..." << std::endl;
+		workers.join_all();
+		LOG_DEBUG(simpleprocessnodelog) << "[" << typeName(this) << "] workers finished" << std::endl;
+	}
 
 	// ask all dirty multi-inputs for updated
 	for (int i = 0; i < _numMultiInputs; i++)
