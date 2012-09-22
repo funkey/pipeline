@@ -142,8 +142,18 @@ template <typename LockingStrategy>
 void
 SimpleProcessNode<LockingStrategy>::setDirty(OutputBase& output) {
 
-	// make sure we don't miss this notification by a race condition
-	boost::mutex::scoped_lock lock(_updateMutex);
+	/* Now, here we can have a race condition: While updating our outputs, right
+	 * before setting _outputDirty to false for every output, some other thread
+	 * might call setDirty(). In this case, this call will have no effect.
+	 *
+	 * What if we set _outputDirty to false *before* we start updating the
+	 * outputs? In the worst case, we don't see the effect of setDirty(), which
+	 * doesn't matter, since we update the outputs anyway. Without a race
+	 * condition, the output will be set dirty during the update and stay dirty
+	 * after it. Since simultaneously we also send a Modified signal this is
+	 * equivalent to a setDirty() call after the update. Handling is delegated
+	 * to the next process node.
+	 */
 
 	if (_outputNums.count(&output) == 0)
 		LOG_ERROR(simpleprocessnodelog)
@@ -168,8 +178,6 @@ SimpleProcessNode<LockingStrategy>::onInputModified(const Modified& signal, int 
 
 	_inputDirty[numInput] = true;
 
-	setOutputsDirty();
-
 	sendModifiedSignals();
 }
 
@@ -178,8 +186,6 @@ void
 SimpleProcessNode<LockingStrategy>::onInputSet(const InputSetBase& signal, int numInput) {
 
 	_inputDirty[numInput] = true;
-
-	setOutputsDirty();
 }
 
 template <typename LockingStrategy>
@@ -188,8 +194,6 @@ SimpleProcessNode<LockingStrategy>::onInputSetToSharedPointer(const InputSetBase
 
 	// shared pointer inputs are never dirty
 	_inputDirty[numInput] = false;
-
-	setOutputsDirty();
 }
 
 template <typename LockingStrategy>
@@ -200,8 +204,6 @@ SimpleProcessNode<LockingStrategy>::onInputAdded(const InputAddedBase& signal, i
 
 	// add a new dirty flag for this multi-input's new input
 	_multiInputDirty[numMultiInput].push_back(true);
-
-	setOutputsDirty();
 }
 
 template <typename LockingStrategy>
@@ -211,8 +213,6 @@ SimpleProcessNode<LockingStrategy>::onMultiInputModified(const Modified& signal,
 	LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] multi-input " << numMultiInput << " was modified in input " << numInput << std::endl;
 
 	_multiInputDirty[numMultiInput][numInput] = true;
-
-	setOutputsDirty();
 
 	for (int i = 0; i < _numOutputs; i++)
 		_modified[i]();
@@ -228,20 +228,38 @@ SimpleProcessNode<LockingStrategy>::onUpdate(const Update& signal, int numOutput
 
 	if (haveDirtyInput()) {
 
+		// our inputs changed -- need to recompute the output
+		setOutputsDirty();
+
 		LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] I have some dirty inputs -- sending update signals" << std::endl;
 
 		sendUpdateSignals();
-
 	}
 
-	LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] I have no dirty input" << std::endl;
+	/* Here a race condition can occure: While we are sending the update signals
+	 * to the inputs, a Modified signal might have been sent by another thread,
+	 * resulting in a dirty input right after the update. This is okay, since we
+	 * also send Modified to the next node. But with the following code, we set
+	 * _outputDirty to false and thus overwrote the setting of the Modified
+	 * signal we received earlier. The result is that we don't update our
+	 * output, since we don't know that it is dirty.
+	 *
+	 * One solution would be to set _outputDirty to true whenever we enter this
+	 * function and haveDirtyInput() is true. In this case, do we need
+	 * _outputDirty at all? Yes, the user can set the output dirty even if the
+	 * inputs didn't change.
+	 */
 
 	if (haveDirtyOutput()) {
 
-		// lock inputs, outputs, and update outputs
-		lockInputs(0);
+		/* Here, the setDirty() race condition can occur. However, it won't hurt
+		 * since we are about to update the outputs anyway.
+		 */
 
 		setOutputsDirty(false);
+
+		// lock inputs, outputs, and update outputs
+		lockInputs(0);
 
 	} else {
 

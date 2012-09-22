@@ -141,8 +141,6 @@ protected:
 	 * outputs that depend on 'factor' you would call this method.
 	 *
 	 * @param output The output to set dirty.
-	 *
-	 * Thread save (by locking). Don't call from updateOutputs().
 	 */
 	void setDirty(OutputBase& output);
 
