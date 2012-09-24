@@ -9,6 +9,15 @@ class Data {
 
 public:
 
+	// default constructor
+	Data() {}
+
+	// overwrite default copy constructor
+	Data(const Data& data) {}
+
+	// overwrite default assignment operator
+	Data& operator=(const Data& data) {}
+
 	virtual ~Data() {}
 
 	boost::shared_mutex& getMutex() { return _mutex; }
