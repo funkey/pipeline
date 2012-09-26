@@ -187,6 +187,8 @@ private:
 
 	bool haveDirtyInput();
 
+	unsigned int numDirtyInputs();
+
 	bool haveDirtyOutput();
 
 	void setOutputsDirty(bool dirty = true);
@@ -223,6 +225,11 @@ private:
 
 	// a mutex to protect concurrent updates
 	boost::mutex _updateMutex;
+
+	// the maximal number of threads
+	static int _numThreads;
+
+	static boost::mutex _threadCountMutex;
 };
 
 }

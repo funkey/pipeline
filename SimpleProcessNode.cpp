@@ -9,6 +9,12 @@ logger::LogChannel simpleprocessnodelog("simpleprocessnodelog");
 namespace pipeline {
 
 template <typename LockingStrategy>
+int SimpleProcessNode<LockingStrategy>::_numThreads = 5;
+
+template <typename LockingStrategy>
+boost::mutex SimpleProcessNode<LockingStrategy>::_threadCountMutex;
+
+template <typename LockingStrategy>
 SimpleProcessNode<LockingStrategy>::SimpleProcessNode() :
 	_numInputs(0),
 	_numMultiInputs(0),
@@ -273,6 +279,8 @@ SimpleProcessNode<LockingStrategy>::sendUpdateSignals() {
 
 	boost::thread_group workers;
 
+	unsigned int numDirties = numDirtyInputs();
+
 	// ask all dirty inputs for updates
 	for (int i = 0; i < _numInputs; i++)
 		if (_inputDirty[i]) {
@@ -280,7 +288,39 @@ SimpleProcessNode<LockingStrategy>::sendUpdateSignals() {
 			LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] sending update signal to input " << i << std::endl;
 
 			_inputDirty[i] = false;
-			workers.create_thread(boost::ref(_inputUpdate[i]));
+
+			bool doItYourself = false;
+
+			if (numDirties == 1) {
+
+				doItYourself = true;
+
+			} else {
+
+				boost::mutex::scoped_lock lock(_threadCountMutex);
+
+				if (_numThreads == 0) {
+
+					LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] no more free threads available, will do it myself" << std::endl;
+					doItYourself = true;
+
+				} else {
+
+					_numThreads--;
+
+					LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] launching worker thread" << std::endl;
+					workers.create_thread(boost::ref(_inputUpdate[i]));
+				}
+			}
+
+			numDirties--;
+
+			if (doItYourself) {
+
+				LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] asking for update myself" << std::endl;
+				_inputUpdate[i]();
+				LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] updated" << std::endl;
+			}
 		}
 
 	// ask all dirty multi-inputs for updates
@@ -291,7 +331,40 @@ SimpleProcessNode<LockingStrategy>::sendUpdateSignals() {
 				LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] sending update signal to multi-input " << i << ", input " << j << std::endl;
 
 				_multiInputDirty[i][j] = false;
-				workers.create_thread(boost::ref((*_multiInputUpdates[i])[j]));
+
+				bool doItYourself = false;
+
+
+				if (numDirties == 1) {
+
+					doItYourself = true;
+
+				} else {
+
+					boost::mutex::scoped_lock lock(_threadCountMutex);
+
+					if (_numThreads == 0) {
+
+						LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] no more free threads available, will do it myself" << std::endl;
+						doItYourself = true;
+
+					} else {
+
+						_numThreads--;
+
+						LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] launching worker thread" << std::endl;
+						workers.create_thread(boost::ref((*_multiInputUpdates[i])[j]));
+					}
+				}
+
+				numDirties--;
+
+				if (doItYourself) {
+
+					LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] asking for update myself" << std::endl;
+					(*_multiInputUpdates[i])[j]();
+					LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] updated" << std::endl;
+				}
 			}
 
 	if (workers.size() > 0) {
@@ -299,6 +372,10 @@ SimpleProcessNode<LockingStrategy>::sendUpdateSignals() {
 		LOG_DEBUG(simpleprocessnodelog) << "[" << typeName(this) << "] waiting for all workers to finish..." << std::endl;
 		workers.join_all();
 		LOG_DEBUG(simpleprocessnodelog) << "[" << typeName(this) << "] workers finished" << std::endl;
+
+		boost::mutex::scoped_lock lock(_threadCountMutex);
+
+		_numThreads += workers.size();
 	}
 }
 
@@ -329,6 +406,26 @@ SimpleProcessNode<LockingStrategy>::haveDirtyInput() {
 				return true;
 
 	return false;
+}
+
+template <typename LockingStrategy>
+unsigned int
+SimpleProcessNode<LockingStrategy>::numDirtyInputs() {
+
+	unsigned int numDirties = 0;
+
+	// check inputs
+	for (int i = 0; i < _numInputs; i++)
+		if (_inputDirty[i])
+			numDirties++;
+
+	// check multi-inputs
+	for (int i = 0; i < _numMultiInputs; i++)
+		for (int j = 0; j < _multiInputDirty[i].size(); j++)
+			if (_multiInputDirty[i][j])
+				numDirties++;
+
+	return numDirties;
 }
 
 template <typename LockingStrategy>
