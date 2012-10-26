@@ -282,7 +282,7 @@ public:
 
 	template <typename S>
 	OutputTypeDispatch(const S& data) :
-		OutputImpl<T>(data) {};
+		OutputImpl<T>(data) {}
 };
 
 template <typename T>
@@ -294,7 +294,7 @@ public:
 
 	template <typename S>
 	OutputTypeDispatch(const S& data) :
-		OutputImpl<Wrap<T> >(new Wrap<T>(data)) {};
+		OutputImpl<Wrap<T> >(new Wrap<T>(data)) {}
 
 	// transparent unwrapper
 	T& operator*() {
