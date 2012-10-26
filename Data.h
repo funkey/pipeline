@@ -16,7 +16,7 @@ public:
 	Data(const Data& data) {}
 
 	// overwrite default assignment operator
-	Data& operator=(const Data& data) {}
+	Data& operator=(const Data& data) { return *this; }
 
 	virtual ~Data() {}
 
