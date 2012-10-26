@@ -301,6 +301,11 @@ public:
 
 		return OutputImpl<Wrap<T> >::get()->get();
 	}
+
+	T* operator->() {
+
+		return &(OutputImpl<Wrap<T> >::get()->get());
+	}
 };
 
 template <typename T>
