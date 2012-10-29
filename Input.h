@@ -248,6 +248,8 @@ public:
 			return true;
 		}
 
+		LOG_DEBUG(pipelinelog) << "output of type " << typeName(output) << " can not be assigned to input of type " << typeName(*this) << std::endl;
+
 		return false;
 	}
 
@@ -275,6 +277,8 @@ public:
 
 			return true;
 		}
+
+		LOG_DEBUG(pipelinelog) << "pointer of type " << typeName(data) << " can not be assigned to input of type " << typeName(*this) << std::endl;
 
 		return false;
 	}
