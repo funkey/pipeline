@@ -378,6 +378,8 @@ private:
 
 			return true;
 		}
+
+		return false;
 	}
 
 	void establishingSignalling(OutputBase& output, Input<DataType>& newInput) {
