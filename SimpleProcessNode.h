@@ -65,7 +65,16 @@ public:
 
 	void lockOutput(OutputBase& output, boost::function<void()> next) {
 
-		boost::unique_lock<boost::shared_mutex> lock(output.getData()->getMutex());
+		if (!output)
+			output.createData();
+
+		// Instantiation here ensures that the output data survives, even if the 
+		// owning Output decides to replace it. Since we are using the mutex of 
+		// the data and not of the output, we have to make sure the data does 
+		// not get destructed before we are done.
+		boost::shared_ptr<Data> data = output.getData();
+
+		boost::unique_lock<boost::shared_mutex> lock(data->getMutex());
 
 		next();
 	}
