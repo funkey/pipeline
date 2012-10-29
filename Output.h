@@ -192,6 +192,8 @@ public:
 
 	virtual boost::shared_ptr<Data> getData() const = 0;
 
+	virtual operator bool() = 0;
+
 private:
 
 	std::string _name;
