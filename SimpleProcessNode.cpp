@@ -1,5 +1,6 @@
 #include <boost/thread/thread.hpp>
 
+#include <util/ProgramOptions.h>
 #include "InputSignals.h"
 #include "ProcessNode.h"
 #include "SimpleProcessNode.h"
@@ -8,8 +9,14 @@ logger::LogChannel simpleprocessnodelog("simpleprocessnodelog");
 
 namespace pipeline {
 
+util::ProgramOption optionNumThreads(
+		util::_module           = "pipeline",
+		util::_long_name        = "numThreads",
+		util::_description_text = "Set the number of additional threads to parallelize independent processes.",
+		util::_default_value    = 0);
+
 template <typename LockingStrategy>
-int SimpleProcessNode<LockingStrategy>::_numThreads = 5;
+int SimpleProcessNode<LockingStrategy>::_numThreads = 0;
 
 template <typename LockingStrategy>
 boost::mutex SimpleProcessNode<LockingStrategy>::_threadCountMutex;
@@ -18,7 +25,10 @@ template <typename LockingStrategy>
 SimpleProcessNode<LockingStrategy>::SimpleProcessNode() :
 	_numInputs(0),
 	_numMultiInputs(0),
-	_numOutputs(0) {}
+	_numOutputs(0) {
+
+	_numThreads = optionNumThreads;
+}
 
 template <typename LockingStrategy>
 SimpleProcessNode<LockingStrategy>::~SimpleProcessNode() {
