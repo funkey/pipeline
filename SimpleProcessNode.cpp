@@ -63,6 +63,9 @@ SimpleProcessNode<LockingStrategy>::registerInput(InputBase& input, std::string 
 		// be computed, regardless of their presence).
 		_inputDirty[numInput] = false;
 
+		// optional inputs need not be present to update the output
+		_inputRequired.push_back(false);
+
 		// However, if an optional input is set, it has to be marked dirty,
 		// except it was set to a shared pointer -- this is taken care of with
 		// the following callbacks.
@@ -71,6 +74,12 @@ SimpleProcessNode<LockingStrategy>::registerInput(InputBase& input, std::string 
 
 		input.registerBackwardCallback(funOnInputSet, this, signals::Transparent);
 		input.registerBackwardCallback(funOnInputSetToSharedPointer, this, signals::Transparent);
+
+	} else {
+
+		// non-optional inputs have to be present before we can update the 
+		// output
+		_inputRequired.push_back(true);
 	}
 
 	// register the appropriate update signal for this input
@@ -278,7 +287,7 @@ SimpleProcessNode<LockingStrategy>::onUpdate(const Update& signal, int numOutput
 	 * inputs didn't change.
 	 */
 
-	if (haveDirtyOutput()) {
+	if (haveDirtyOutput() && requiredInputsPresent()) {
 
 		/* Here, the setDirty() race condition can occur. However, it won't hurt
 		 * since we are about to update the outputs anyway.
@@ -467,6 +476,18 @@ SimpleProcessNode<LockingStrategy>::setOutputsDirty(bool dirty) {
 
 	for (int i = 0; i < _outputDirty.size(); i++)
 		_outputDirty[i] = dirty;
+}
+
+template <typename LockingStrategy>
+bool
+SimpleProcessNode<LockingStrategy>::requiredInputsPresent() {
+
+	// check inputs
+	for (int i = 0; i < _numInputs; i++)
+		if (!getInput(i) && _inputRequired[i])
+			return false;
+
+	return true;
 }
 
 // compile these specializations

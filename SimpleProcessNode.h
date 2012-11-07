@@ -204,6 +204,8 @@ private:
 
 	void setOutputsDirty(bool dirty = true);
 
+	bool requiredInputsPresent();
+
 	// one boolean for each input
 	std::vector<bool> _inputDirty;
 
@@ -233,6 +235,9 @@ private:
 
 	// a look-up table from outputs to their number
 	std::map<OutputBase*, unsigned int> _outputNums;
+
+	// indicates that an input is required for the output update
+	std::vector<bool> _inputRequired;
 
 	// a mutex to protect concurrent updates
 	boost::mutex _updateMutex;

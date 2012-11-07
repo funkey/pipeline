@@ -177,6 +177,11 @@ public:
 	 */
 	virtual bool accept(boost::shared_ptr<Data> data) = 0;
 
+	/**
+	 * Returns true, if this input is assigned.
+	 */
+	virtual operator bool() = 0;
+
 	signals::Sender& getBackwardSender();
 
 	signals::Receiver& getBackwardReceiver();
@@ -248,7 +253,7 @@ public:
 			return true;
 		}
 
-		LOG_DEBUG(pipelinelog) << "output of type " << typeName(output) << " can not be assigned to input of type " << typeName(*this) << std::endl;
+		LOG_ERROR(pipelinelog) << "output of type " << typeName(output) << " can not be assigned to input of type " << typeName(*this) << std::endl;
 
 		return false;
 	}
@@ -278,7 +283,7 @@ public:
 			return true;
 		}
 
-		LOG_DEBUG(pipelinelog) << "pointer of type " << typeName(data) << " can not be assigned to input of type " << typeName(*this) << std::endl;
+		LOG_ERROR(pipelinelog) << "pointer of type " << typeName(*data) << " can not be assigned to input of type " << typeName(*this) << std::endl;
 
 		return false;
 	}
