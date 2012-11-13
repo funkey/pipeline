@@ -163,6 +163,8 @@ private:
 
 	void onInputAdded(const InputAddedBase& signal, int numMultiInput);
 
+	void onInputsCleared(const InputsCleared& signal, int numMultiInput);
+
 	void onMultiInputModified(const Modified& signal, int numInput, int numMultiInput);
 
 	void lockInputs(int i) {

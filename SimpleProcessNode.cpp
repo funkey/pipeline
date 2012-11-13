@@ -95,11 +95,13 @@ SimpleProcessNode<LockingStrategy>::registerInputs(MultiInput& input, std::strin
 	_multiInputUpdates.push_back(new signals::Slots<Update>());
 
 	// create signal callbacks that store the number of the multi-input with them
-	boost::function<void(InputAddedBase&)>         funOnInputAdded = boost::bind(&SimpleProcessNode<LockingStrategy>::onInputAdded,         this, _1, numMultiInput);
-	boost::function<void(Modified&, unsigned int)> funOnModified   = boost::bind(&SimpleProcessNode<LockingStrategy>::onMultiInputModified, this, _1, _2, numMultiInput);
+	boost::function<void(InputAddedBase&)>         funOnInputAdded    = boost::bind(&SimpleProcessNode<LockingStrategy>::onInputAdded,         this, _1, numMultiInput);
+	boost::function<void(InputsCleared&)>          funOnInputsCleared = boost::bind(&SimpleProcessNode<LockingStrategy>::onInputsCleared,      this, _1, numMultiInput);
+	boost::function<void(Modified&, unsigned int)> funOnModified      = boost::bind(&SimpleProcessNode<LockingStrategy>::onMultiInputModified, this, _1, _2, numMultiInput);
 
 	// register the callbacks and setup process node tracking
 	input.registerBackwardCallback(funOnInputAdded, this, signals::Transparent);
+	input.registerBackwardCallback(funOnInputsCleared, this, signals::Transparent);
 	input.registerBackwardCallbacks(funOnModified, this, signals::Transparent);
 
 	// register the appropriate update signal for this input
@@ -220,6 +222,16 @@ SimpleProcessNode<LockingStrategy>::onInputAdded(const InputAddedBase& signal, i
 
 	// add a new dirty flag for this multi-input's new input
 	_multiInputDirty[numMultiInput].push_back(true);
+}
+
+template <typename LockingStrategy>
+void
+SimpleProcessNode<LockingStrategy>::onInputsCleared(const InputsCleared& signal, int numMultiInput) {
+
+	LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] multi-input " << numMultiInput << " was cleared" << std::endl;
+
+	// clear all flags for this multi-input
+	_multiInputDirty[numMultiInput].clear();
 }
 
 template <typename LockingStrategy>

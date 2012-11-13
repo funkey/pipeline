@@ -180,6 +180,12 @@ private:
 	boost::shared_ptr<DataType> _data;
 };
 
+/**
+ * Multi-input clear notification. Internally eliceted, whenever one of the 
+ * clearInputs(...) methods of a ProcessNode has been called.
+ */
+class InputsCleared : public InputRemovedBase {};
+
 } // namespace pipeline
 
 #endif // PIPELINE_INPUT_SIGNALS_H__

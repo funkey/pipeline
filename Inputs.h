@@ -246,6 +246,7 @@ public:
 
 		_internalSender.registerSlot(_inputAdded);
 		_internalSender.registerSlot(_inputAddedToSharedPointer);
+		_internalSender.registerSlot(_inputsCleared);
 	}
 
 	bool accept(OutputBase& output) {
@@ -260,12 +261,15 @@ public:
 
 	void clear() {
 
-		// clear inputs
-		_inputs.clear();
-
 		// clear the slots
 		foreach (signals::SlotsBase* slots, getSlots())
 			slots->clear();
+
+		// clear inputs
+		_inputs.clear();
+
+		// tell everyone
+		_inputsCleared();
 	}
 
 	const Input<DataType>& operator[](unsigned int i) const {
@@ -417,9 +421,10 @@ private:
 	// a list of the current inputs
 	inputs_type _inputs;
 
-	// slot to inform about a new input
+	// slot to inform about input changes
 	signals::Slot<const input_added_type>                   _inputAdded;
 	signals::Slot<const input_added_to_shared_pointer_type> _inputAddedToSharedPointer;
+	signals::Slot<const InputsCleared>                      _inputsCleared;
 
 	// this sender is used to inform about changes in the input
 	signals::Sender _internalSender;
