@@ -13,10 +13,10 @@ public:
 	Data() {}
 
 	// overwrite default copy constructor
-	Data(const Data& data) {}
+	Data(const Data&) {}
 
 	// overwrite default assignment operator
-	Data& operator=(const Data& data) { return *this; }
+	Data& operator=(const Data&) { return *this; }
 
 	virtual ~Data() {}
 

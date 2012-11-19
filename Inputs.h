@@ -402,7 +402,7 @@ private:
 		_inputAdded(input_added_type(newInput));
 	}
 
-	void establishingSignalling(boost::shared_ptr<Data> data, Input<DataType>& newInput) {
+	void establishingSignalling(boost::shared_ptr<Data>, Input<DataType>& newInput) {
 
 		// no signalling for data pointers as inputs
 

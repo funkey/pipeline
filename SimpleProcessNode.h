@@ -21,12 +21,12 @@ class NoLockingStrategy {
 
 public:
 
-	void lockInput(InputBase& input, boost::function<void()> next) {
+	void lockInput(InputBase&, boost::function<void()> next) {
 
 		next();
 	}
 
-	void lockOutput(OutputBase& output, boost::function<void()> next) {
+	void lockOutput(OutputBase&, boost::function<void()> next) {
 
 		next();
 	}
