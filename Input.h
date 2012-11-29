@@ -4,6 +4,7 @@
 #include <boost/type_traits.hpp>
 
 #include <signals/Callback.h>
+#include "exceptions.h"
 #include "Data.h"
 #include "Output.h"
 #include "InputSignals.h"
@@ -14,6 +15,8 @@ namespace pipeline {
 class InputBase {
 
 public:
+
+	struct AssignmentError : virtual PipelineError {};
 
 	InputBase();
 
@@ -253,7 +256,10 @@ public:
 			return true;
 		}
 
-		LOG_ERROR(pipelinelog) << "output of type " << typeName(output) << " can not be assigned to input of type " << typeName(*this) << std::endl;
+		std::stringstream error;
+		error << "output of type " << typeName(output) << " can not be assigned to input of type " << typeName(*this) << std::endl;
+
+		BOOST_THROW_EXCEPTION(AssignmentError() << error_message(error.str()) << STACK_TRACE);
 
 		return false;
 	}
@@ -283,7 +289,10 @@ public:
 			return true;
 		}
 
-		LOG_ERROR(pipelinelog) << "pointer of type " << typeName(*data) << " can not be assigned to input of type " << typeName(*this) << std::endl;
+		std::stringstream error;
+		error << "pointer of type " << typeName(*data) << " can not be assigned to input of type " << typeName(*this) << std::endl;
+
+		BOOST_THROW_EXCEPTION(AssignmentError() << error_message(error.str()) << STACK_TRACE);
 
 		return false;
 	}
