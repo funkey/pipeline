@@ -44,19 +44,40 @@ private:
 };
 
 /**
+ * Base for the specialized InputSetToSharedPointer classes. Use this signal, if 
+ * you are not interested in the type of the input.
+
+ */
+class InputSetToSharedPointerBase : public InputSetBase {};
+
+/**
  * Input set notification for shared pointer inputs. Internally elicited,
  * whenever one of the setInput(...) methods of a ProcessNode has been called
  * with a shared pointer.
  */
 template <typename DataType>
-class InputSetToSharedPointer : public InputSet<DataType> {
+class InputSetToSharedPointer : public InputSetToSharedPointerBase {
 
 public:
 
 	InputSetToSharedPointer() {};
 
 	InputSetToSharedPointer(boost::shared_ptr<DataType> data) :
-		InputSet<DataType>(data) {}
+		_data(data) {}
+
+	boost::shared_ptr<DataType> getData() {
+
+		return _data;
+	}
+
+	const boost::shared_ptr<DataType> getData() const {
+
+		return _data;
+	}
+
+private:
+
+	boost::shared_ptr<DataType> _data;
 };
 
 /**
@@ -130,19 +151,39 @@ private:
 };
 
 /**
+ * Base for the specialized InputSetToSharedPointer classes. Use this signal, if 
+ * you are not interested in the type of the input.
+ */
+class InputAddedToSharedPointerBase : public InputAddedBase {};
+
+/**
  * Input add notification. Internally eliceted, whenever one of the
  * addInput(...) methods of a ProcessNode has been called with a shared
  * pointer.
  */
 template <typename DataType>
-class InputAddedToSharedPointer : public InputAdded<DataType> {
+class InputAddedToSharedPointer : public InputAddedToSharedPointerBase {
 
 public:
 
 	InputAddedToSharedPointer() {};
 
 	InputAddedToSharedPointer(boost::shared_ptr<DataType> data) :
-		InputAdded<DataType>(data) {}
+		_data(data) {}
+
+	boost::shared_ptr<DataType> getData() {
+
+		return _data;
+	}
+
+	const boost::shared_ptr<DataType> getData() const {
+
+		return _data;
+	}
+
+private:
+
+	boost::shared_ptr<DataType> _data;
 };
 
 /**

@@ -69,8 +69,8 @@ SimpleProcessNode<LockingStrategy>::registerInput(InputBase& input, std::string 
 		// However, if an optional input is set, it has to be marked dirty,
 		// except it was set to a shared pointer -- this is taken care of with
 		// the following callbacks.
-		boost::function<void(InputSetBase&)> funOnInputSet = boost::bind(&SimpleProcessNode<LockingStrategy>::onInputSet, this, _1, numInput);
-		boost::function<void(InputSetBase&)> funOnInputSetToSharedPointer = boost::bind(&SimpleProcessNode<LockingStrategy>::onInputSetToSharedPointer, this, _1, numInput);
+		boost::function<void(InputSetBase&)>                funOnInputSet                = boost::bind(&SimpleProcessNode<LockingStrategy>::onInputSet,                this, _1, numInput);
+		boost::function<void(InputSetToSharedPointerBase&)> funOnInputSetToSharedPointer = boost::bind(&SimpleProcessNode<LockingStrategy>::onInputSetToSharedPointer, this, _1, numInput);
 
 		input.registerBackwardCallback(funOnInputSet, this, signals::Transparent);
 		input.registerBackwardCallback(funOnInputSetToSharedPointer, this, signals::Transparent);
@@ -212,15 +212,25 @@ template <typename LockingStrategy>
 void
 SimpleProcessNode<LockingStrategy>::onInputSet(const InputSetBase& signal, int numInput) {
 
+	LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] input " << numInput << " got a new input" << std::endl;
+
 	_inputDirty[numInput] = true;
 }
 
 template <typename LockingStrategy>
 void
-SimpleProcessNode<LockingStrategy>::onInputSetToSharedPointer(const InputSetBase& signal, int numInput) {
+SimpleProcessNode<LockingStrategy>::onInputSetToSharedPointer(const InputSetToSharedPointerBase& signal, int numInput) {
+
+	LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] input " << numInput << " got a new input (shared pointer)" << std::endl;
 
 	// shared pointer inputs are never dirty
 	_inputDirty[numInput] = false;
+
+	// therefore, we have to set the outputs dirty explicitly
+	setOutputsDirty();
+
+	// shared pointers can't talk, so send the modified signal ourselves
+	sendModifiedSignals();
 }
 
 template <typename LockingStrategy>
