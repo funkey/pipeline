@@ -67,13 +67,8 @@ SimpleProcessNode<LockingStrategy>::registerInput(InputBase& input, std::string 
 		_inputRequired.push_back(false);
 
 		// However, if an optional input is set, it has to be marked dirty,
-		// except it was set to a shared pointer -- this is taken care of with
-		// the following callbacks.
-		boost::function<void(InputSetBase&)>                funOnInputSet                = boost::bind(&SimpleProcessNode<LockingStrategy>::onInputSet,                this, _1, numInput);
-		boost::function<void(InputSetToSharedPointerBase&)> funOnInputSetToSharedPointer = boost::bind(&SimpleProcessNode<LockingStrategy>::onInputSetToSharedPointer, this, _1, numInput);
-
+		boost::function<void(InputSetBase&)> funOnInputSet = boost::bind(&SimpleProcessNode<LockingStrategy>::onInputSet, this, _1, numInput);
 		input.registerBackwardCallback(funOnInputSet, this, signals::Transparent);
-		input.registerBackwardCallback(funOnInputSetToSharedPointer, this, signals::Transparent);
 
 	} else {
 
@@ -81,6 +76,11 @@ SimpleProcessNode<LockingStrategy>::registerInput(InputBase& input, std::string 
 		// output
 		_inputRequired.push_back(true);
 	}
+
+	// Regardless of the type of input -- if it was set to a shared pointer it 
+	// has to be set dirty and Modified has to be sent.
+	boost::function<void(InputSetToSharedPointerBase&)> funOnInputSetToSharedPointer = boost::bind(&SimpleProcessNode<LockingStrategy>::onInputSetToSharedPointer, this, _1, numInput);
+	input.registerBackwardCallback(funOnInputSetToSharedPointer, this, signals::Transparent);
 
 	// register the appropriate update signal for this input
 	input.registerBackwardSlot(_inputUpdate[numInput]);
