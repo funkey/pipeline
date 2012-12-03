@@ -18,17 +18,19 @@ public:
 		_holder = holder;
 	}
 
+	template <typename CallbackType>
+	typename boost::signals2::signal<void(typename CallbackType::signal_type&)>::slot_type wrap(CallbackType& callback) {
+
+		typedef typename CallbackType::signal_type          signal_type;
+		typedef boost::signals2::signal<void(signal_type&)> boost_signal_type;
+		typedef typename boost_signal_type::slot_type       boost_slot_type;
+
+		return boost_slot_type(boost::ref(callback)).track(getHolder());
+	}
+
 protected:
 
 	boost::shared_ptr<ProcessNode> getHolder();
-
-	template <typename SignalType>
-	boost::function<void(SignalType&)> wrap(boost::function<void(SignalType&)> callback) {
-
-		typedef boost::signals2::signal<void(SignalType&)> boost_signal_type;
-
-		return typename boost_signal_type::slot_type(callback).track(getHolder());
-	}
 
 private:
 
