@@ -239,7 +239,6 @@ public:
 			// keep the process node of this output alive
 			_creator = output.getProcessNode();
 
-			// TODO: disconnect previous internal signalling connections
 			// establish the internal signalling connections
 			_internalSender.connect(getBackwardReceiver());
 
@@ -276,7 +275,6 @@ public:
 			// we are not aware of any creator
 			_creator.reset();
 
-			// TODO: disconnect previous internal signalling connections
 			// establish the internal signalling connections
 			_internalSender.connect(getBackwardReceiver());
 
