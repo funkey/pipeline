@@ -339,8 +339,6 @@ private:
 
 			unsigned int numInput = _inputs.size();
 
-			_inputs.push_back(newInput);
-
 			LOG_ALL(pipelinelog) << "[" << typeName(this) << "] registering slots:" << std::endl;
 
 			foreach (signals::SlotsBase* slots, getSlots()) {
@@ -379,6 +377,8 @@ private:
 			LOG_ALL(pipelinelog) << "[" << typeName(this) << "] establishing signalling connections" << std::endl;
 
 			establishingSignalling(output, newInput);
+
+			_inputs.push_back(newInput);
 
 			return true;
 		}

@@ -22,15 +22,6 @@ public:
 
 	InputBase(std::string name);
 
-	virtual ~InputBase() {
-
-		// destruct all process node callbacks, that have been registered for
-		// this input
-		for (std::vector<signals::CallbackBase*>::iterator i = _callbacks.begin();
-		     i != _callbacks.end(); i++)
-			delete *i;
-	}
-
 	/**
 	 * Set the name of this input.
 	 *
@@ -118,7 +109,7 @@ public:
 	template <class T, typename SignalType>
 	void registerBackwardCallback(void (T::*callback)(SignalType&), T* processNode, signals::CallbackInvocation invocation = signals::Exclusive) {
 
-		ProcessNodeCallback<SignalType>* processNodeCallback = new ProcessNodeCallback<SignalType>(processNode, boost::bind(callback, static_cast<T*>(processNode), _1), invocation);
+		boost::shared_ptr<ProcessNodeCallback<SignalType> > processNodeCallback = boost::make_shared<ProcessNodeCallback<SignalType> >(processNode, boost::bind(callback, static_cast<T*>(processNode), _1), invocation);
 
 		registerBackwardCallback(*processNodeCallback);
 
@@ -136,7 +127,7 @@ public:
 	template <typename SignalType>
 	void registerBackwardCallback(boost::function<void(SignalType&)> callback, ProcessNode* processNode, signals::CallbackInvocation invocation = signals::Exclusive) {
 
-		ProcessNodeCallback<SignalType>* processNodeCallback = new ProcessNodeCallback<SignalType>(processNode, callback, invocation);
+		boost::shared_ptr<ProcessNodeCallback<SignalType> > processNodeCallback = boost::make_shared<ProcessNodeCallback<SignalType> >(processNode, callback, invocation);
 
 		registerBackwardCallback(*processNodeCallback);
 
@@ -205,7 +196,7 @@ private:
 
 	// list of registered process node callbacks created by input
 	// (exclusive ownership)
-	std::vector<signals::CallbackBase*> _callbacks;
+	std::vector<boost::shared_ptr<signals::CallbackBase> > _callbacks;
 
 	// the currently assigned output to this input (null, if not assigned)
 	OutputBase* _assignedOutput;
