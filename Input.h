@@ -172,6 +172,11 @@ public:
 	virtual bool accept(boost::shared_ptr<Data> data) = 0;
 
 	/**
+	 * Unset this input.
+	 */
+	virtual void unset() = 0;
+
+	/**
 	 * Returns true, if this input is assigned.
 	 */
 	virtual operator bool() = 0;
@@ -209,10 +214,12 @@ public:
 
 	InputImpl() :
 		_inputSet(boost::make_shared<signals::Slot<const InputSet<DataType> > >()),
-		_inputSetToSharedPointer(boost::make_shared<signals::Slot<const InputSetToSharedPointer<DataType> > >()) {
+		_inputSetToSharedPointer(boost::make_shared<signals::Slot<const InputSetToSharedPointer<DataType> > >()),
+		_inputUnset(boost::make_shared<signals::Slot<const InputUnset<DataType> > >()) {
 
 		_internalSender.registerSlot(*_inputSet);
 		_internalSender.registerSlot(*_inputSetToSharedPointer);
+		_internalSender.registerSlot(*_inputUnset);
 	}
 
 	bool accept(OutputBase& output) {
@@ -286,6 +293,31 @@ public:
 		return false;
 	}
 
+	void unset() {
+
+		// get a shared pointer to the data for the  signal
+		boost::shared_ptr<DataType> oldData = _data;
+
+		// reset shared pointer to data
+		_data.reset();
+
+		// release creator
+		_creator.reset();
+
+		if (hasAssignedOutput()) {
+
+			// tear-down input-output signalling connections
+			getAssignedOutput().getForwardSender().disconnect(getBackwardReceiver());
+			getBackwardSender().disconnect(getAssignedOutput().getForwardReceiver());
+
+			// we are not assigned to any output any more
+			unsetAssignedOutput();
+		}
+
+		// inform about ance
+		(*_inputUnset)(InputUnset<DataType>(oldData));
+	}
+
 	boost::shared_ptr<Data> getAssignedSharedPtr() const {
 
 		return _data;
@@ -332,6 +364,9 @@ private:
 
 	// slot to send a signal when the input was set to a shared pointer
 	boost::shared_ptr<signals::Slot<const InputSetToSharedPointer<DataType> > > _inputSetToSharedPointer;
+
+	// slot to send a signal when the input was ed
+	boost::shared_ptr<signals::Slot<const InputUnset<DataType> > > _inputUnset;
 
 	// internally used sender to inform about a new input
 	signals::Sender _internalSender;

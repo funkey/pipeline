@@ -107,6 +107,21 @@ public:
 	bool setInput(const std::string& name, InputBase& input);
 
 	/**
+	 * Unset the first input of this process node.
+	 */
+	void unsetInput();
+
+	/**
+	 * Unset the ith input of this process node.
+	 */
+	void unsetInput(unsigned int i);
+
+	/**
+	 * Unset the input with the given name of this process node.
+	 */
+	void unsetInput(const std::string& name);
+
+	/**
 	 * Adds an output to the first multi-input of this process node. A call to
 	 * this method is equivalent to addInput(0, output).
 	 *

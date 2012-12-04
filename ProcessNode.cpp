@@ -38,6 +38,24 @@ ProcessNode::setInput(const std::string& name, boost::shared_ptr<Data> data) {
 	return getInput(name).accept(data);
 }
 
+void
+ProcessNode::unsetInput() {
+
+	return getInput().unset();
+}
+
+void
+ProcessNode::unsetInput(unsigned int i) {
+
+	return getInput(i).unset();
+}
+
+void
+ProcessNode::unsetInput(const std::string& name) {
+
+	return getInput(name).unset();
+}
+
 bool
 ProcessNode::setInput(InputBase& input) {
 

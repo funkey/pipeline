@@ -158,6 +158,11 @@ public:
 	 */
 	virtual void clear() = 0;
 
+	/**
+	 * Remove all assigned outputs from this multi-input.
+	 */
+	void unset() { clear(); }
+
 protected:
 
 	/**
