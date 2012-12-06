@@ -3,19 +3,8 @@
 
 namespace pipeline {
 
-OutputBase::OutputBase() {}
-
-void
-OutputBase::setName(std::string name) {
-
-	_name = name;
-}
-
-std::string
-OutputBase::getName() const {
-
-	return _name;
-}
+OutputBase::OutputBase() :
+	_processNode(0) {}
 
 void
 OutputBase::registerForwardSlot(signals::SlotBase& slot) {
@@ -44,7 +33,9 @@ OutputBase::getForwardReceiver() {
 void
 OutputBase::setProcessNode(ProcessNode* processNode) {
 
-	_processNode = processNode;
+	// don't reassign if this output already belongs to a process node
+	if (_processNode == 0)
+		_processNode = processNode;
 }
 
 boost::shared_ptr<ProcessNode>

@@ -4,9 +4,6 @@ namespace pipeline {
 
 MultiInput::MultiInput() {}
 
-MultiInput::MultiInput(std::string name) :
-	InputBase(name) {}
-
 void
 MultiInput::registerBackwardSlots(signals::SlotsBase& slots) {
 

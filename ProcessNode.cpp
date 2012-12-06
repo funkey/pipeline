@@ -164,13 +164,15 @@ ProcessNode::getOutput(std::string name) {
 
 	LOG_ALL(pipelinelog) << "[ProcessNode] searching for output with name " << name << std::endl;
 
-	for (unsigned int i = 0; i < _outputs.size(); i++)
-		if (_outputs[i]->getName() == name)
-			return *_outputs[i];
+	if (!_outputNames.count(name)) {
 
-	BOOST_THROW_EXCEPTION(
-			NoSuchOutput() << error_message("no such output: " + name)
-				           << STACK_TRACE);
+		BOOST_THROW_EXCEPTION(
+				NoSuchOutput() << error_message("no such output: " + name)
+							   << STACK_TRACE);
+	} else {
+
+		return *_outputNames[name];
+	}
 }
 
 boost::shared_ptr<ProcessNode>
@@ -182,26 +184,27 @@ ProcessNode::getSharedPtr() {
 void
 ProcessNode::registerInput(InputBase& input, std::string name) {
 
-	input.setName(name);
-
 	_inputs.push_back(&input);
+
+	_inputNames[name] = &input;
 }
 
 void
 ProcessNode::registerInputs(MultiInput& input, std::string name) {
 
-	input.setName(name);
-
 	_multiInputs.push_back(&input);
+
+	_multiInputNames[name] = &input;
 }
 
 void
 ProcessNode::registerOutput(OutputBase& output, std::string name) {
 
 	output.setProcessNode(this);
-	output.setName(name);
 
 	_outputs.push_back(&output);
+
+	_outputNames[name] = &output;
 }
 
 InputBase&
@@ -226,13 +229,15 @@ ProcessNode::getInput(unsigned int i) {
 InputBase&
 ProcessNode::getInput(std::string name) {
 
-	for (unsigned int i = 0; i < _inputs.size(); i++)
-		if (_inputs[i]->getName() == name)
-			return *_inputs[i];
+	if (!_inputNames.count(name)) {
 
-	BOOST_THROW_EXCEPTION(
-			NoSuchInput() << error_message("no such input: " + name)
-			              << STACK_TRACE);
+		BOOST_THROW_EXCEPTION(
+				NoSuchInput() << error_message("no such input: " + name)
+							  << STACK_TRACE);
+	} else {
+
+		return *_inputNames[name];
+	}
 }
 
 MultiInput&
@@ -257,13 +262,15 @@ ProcessNode::getMultiInput(unsigned int i) {
 MultiInput&
 ProcessNode::getMultiInput(std::string name) {
 
-	for (unsigned int i = 0; i < _multiInputs.size(); i++)
-		if (_multiInputs[i]->getName() == name)
-			return *_multiInputs[i];
+	if (!_multiInputNames.count(name)) {
 
-	BOOST_THROW_EXCEPTION(
-			NoSuchInput() << error_message("no such input: " + name)
-			              << STACK_TRACE);
+		BOOST_THROW_EXCEPTION(
+				NoSuchInput() << error_message("no such input: " + name)
+							  << STACK_TRACE);
+	} else {
+
+		return *_multiInputNames[name];
+	}
 }
 
 } // namespace pipeline

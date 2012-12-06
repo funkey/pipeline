@@ -7,22 +7,6 @@ namespace pipeline {
 InputBase::InputBase() :
 	_assignedOutput(0) {}
 
-InputBase::InputBase(std::string name) :
-	_name(name),
-	_assignedOutput(0) {}
-
-void
-InputBase::setName(std::string name) {
-
-	_name = name;
-}
-
-const std::string&
-InputBase::getName() {
-
-	return _name;
-}
-
 void
 InputBase::registerBackwardSlot(signals::SlotBase& slot) {
 

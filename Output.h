@@ -29,13 +29,6 @@ public:
 	 */
 	OutputBase();
 
-	/**
-	 * Create a new OutputBase.
-	 *
-	 * @param name The name of this output.
-	 */
-	OutputBase(std::string name);
-
 	virtual ~OutputBase() {
 
 		// destruct all process node callbacks, that have been registered for
@@ -44,20 +37,6 @@ public:
 		     i != _callbacks.end(); i++)
 			delete *i;
 	}
-
-	/**
-	 * Set the name of this output.
-	 *
-	 * @param name The name of this output.
-	 */
-	void setName(std::string name);
-
-	/**
-	 * Get the name of this output.
-	 *
-	 * @return The name of this output.
-	 */
-	std::string getName() const;
 
 	/**
 	 * Register a slot for forward signals with this output.
@@ -195,8 +174,6 @@ public:
 	virtual operator bool() = 0;
 
 private:
-
-	std::string _name;
 
 	signals::Sender   _forwardSender;
 	signals::Receiver _forwardReceiver;

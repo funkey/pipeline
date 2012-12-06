@@ -20,22 +20,6 @@ public:
 
 	InputBase();
 
-	InputBase(std::string name);
-
-	/**
-	 * Set the name of this input.
-	 *
-	 * @param name The name of this input.
-	 */
-	void setName(std::string name);
-
-	/**
-	 * Get the name of this input.
-	 *
-	 * @return The name of this input.
-	 */
-	const std::string& getName();
-
 	/**
 	 * Register a slot for backward signals with this input.
 	 *
@@ -192,8 +176,6 @@ protected:
 	void unsetAssignedOutput();
 
 private:
-
-	std::string _name;
 
 	// inputs only send and receive backwards
 	signals::Sender   _backwardSender;

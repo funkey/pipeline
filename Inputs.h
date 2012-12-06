@@ -28,13 +28,6 @@ public:
 	}
 
 	/**
-	 * Create a new multi-input with the given name.
-	 *
-	 * @param name The name of the new multi-input.
-	 */
-	MultiInput(std::string name);
-
-	/**
 	 * Register slots for backward signals with this multi-input. As more and
 	 * more inputs are added to this multi-input, more and more slots will be
 	 * created automatically.

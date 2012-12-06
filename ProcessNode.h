@@ -283,6 +283,10 @@ private:
 	std::vector<InputBase*>  _inputs;
 	std::vector<MultiInput*> _multiInputs;
 	std::vector<OutputBase*> _outputs;
+
+	std::map<std::string, OutputBase*> _outputNames;
+	std::map<std::string, InputBase*>  _inputNames;
+	std::map<std::string, MultiInput*> _multiInputNames;
 };
 
 } // namespace pipeline
