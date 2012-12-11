@@ -3,7 +3,7 @@
 
 #include <boost/shared_ptr.hpp>
 
-#include "signals/PipelineSignal.h"
+#include "signals/Modified.h"
 #include "Wrap.h"
 
 namespace pipeline {
@@ -12,7 +12,7 @@ namespace pipeline {
  * Base for the specialized InputSet classes. Use this signal, if you are not
  * interested in the type of the input.
  */
-class InputSetBase : public PipelineSignal {};
+class InputSetBase : public Modified {};
 
 /**
  * Input set notification. Internally elicited, whenever one of the
