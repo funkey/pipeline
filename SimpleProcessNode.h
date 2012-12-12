@@ -100,9 +100,11 @@ class SimpleProcessNode : public LockingStrategy, public ProcessNode {
 
 public:
 
-	SimpleProcessNode();
+	SimpleProcessNode(std::string name = "");
 
 	virtual ~SimpleProcessNode();
+
+	const std::string& getName() { return _name; }
 
 protected:
 
@@ -206,6 +208,8 @@ private:
 
 	bool requiredInputsPresent();
 
+	std::string getLogPrefix() { return std::string("[") + typeName(*this) + (_name.size() ? std::string("(") + _name + ")]" : ""); }
+
 	// one boolean for each input
 	std::vector<bool> _inputDirty;
 
@@ -242,10 +246,16 @@ private:
 	// a mutex to protect concurrent updates
 	boost::mutex _updateMutex;
 
+	// a mutex to protect access to the _[multiI|i]nputDirty vectors
+	boost::mutex _inputDirtyMutex;
+
 	// the maximal number of threads
 	static int _numThreads;
 
 	static boost::mutex _threadCountMutex;
+
+	// name to identify this process node in the logs
+	std::string _name;
 };
 
 }

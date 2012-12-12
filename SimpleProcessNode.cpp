@@ -22,10 +22,11 @@ template <typename LockingStrategy>
 boost::mutex SimpleProcessNode<LockingStrategy>::_threadCountMutex;
 
 template <typename LockingStrategy>
-SimpleProcessNode<LockingStrategy>::SimpleProcessNode() :
+SimpleProcessNode<LockingStrategy>::SimpleProcessNode(std::string name) :
 	_numInputs(0),
 	_numMultiInputs(0),
-	_numOutputs(0) {
+	_numOutputs(0),
+	_name(name) {
 
 	_numThreads = optionNumThreads;
 }
@@ -41,7 +42,7 @@ template <typename LockingStrategy>
 void
 SimpleProcessNode<LockingStrategy>::registerInput(InputBase& input, std::string name, InputType inputType) {
 
-	LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] got a new input " << name << std::endl;
+	LOG_ALL(simpleprocessnodelog) << getLogPrefix() << " got a new input " << name << std::endl;
 
 	ProcessNode::registerInput(input, name);
 
@@ -94,7 +95,7 @@ template <typename LockingStrategy>
 void
 SimpleProcessNode<LockingStrategy>::registerInputs(MultiInput& input, std::string name) {
 
-	LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] got a new multi-input " << name << std::endl;
+	LOG_ALL(simpleprocessnodelog) << getLogPrefix() << " got a new multi-input " << name << std::endl;
 
 	ProcessNode::registerInputs(input, name);
 
@@ -125,7 +126,7 @@ template <typename LockingStrategy>
 void
 SimpleProcessNode<LockingStrategy>::registerOutput(OutputBase& output, std::string name) {
 
-	LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] got a new output " << name << std::endl;
+	LOG_ALL(simpleprocessnodelog) << getLogPrefix() << " got a new output " << name << std::endl;
 
 	ProcessNode::registerOutput(output, name);
 
@@ -158,11 +159,9 @@ SimpleProcessNode<LockingStrategy>::updateInputs() {
 
 	boost::mutex::scoped_lock lock(_updateMutex);
 
-	LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] input update requested by user" << std::endl;
+	LOG_ALL(simpleprocessnodelog) << getLogPrefix() << " input update requested by user" << std::endl;
 
 	sendUpdateSignals();
-
-	// TODO (multithreading): block and wait for all the inputs to update
 };
 
 template <typename LockingStrategy>
@@ -184,15 +183,15 @@ SimpleProcessNode<LockingStrategy>::setDirty(OutputBase& output) {
 
 	if (_outputNums.count(&output) == 0)
 		LOG_ERROR(simpleprocessnodelog)
-				<< "[" << typeName(this) << "] invalid request to set dirty an unknown output" << std::endl;
+				<< getLogPrefix() << " invalid request to set dirty an unknown output" << std::endl;
 
 	unsigned int outputNum = _outputNums[&output];
 
-	LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] user set dirty output " << outputNum << std::endl;
+	LOG_ALL(simpleprocessnodelog) << getLogPrefix() << " user set dirty output " << outputNum << std::endl;
 
 	_outputDirty[outputNum] = true;
 
-	LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] sending modified to output " << outputNum << std::endl;
+	LOG_ALL(simpleprocessnodelog) << getLogPrefix() << " sending modified to output " << outputNum << std::endl;
 
 	_modified[outputNum]();
 }
@@ -201,7 +200,9 @@ template <typename LockingStrategy>
 void
 SimpleProcessNode<LockingStrategy>::onInputModified(const Modified& signal, int numInput) {
 
-	LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] input " << numInput << " was modified" << std::endl;
+	LOG_ALL(simpleprocessnodelog) << getLogPrefix() << " input " << numInput << " was modified" << std::endl;
+
+	boost::mutex::scoped_lock lock(_inputDirtyMutex);
 
 	_inputDirty[numInput] = true;
 
@@ -212,16 +213,24 @@ template <typename LockingStrategy>
 void
 SimpleProcessNode<LockingStrategy>::onInputSet(const InputSetBase& signal, int numInput) {
 
-	LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] input " << numInput << " got a new input" << std::endl;
+	LOG_ALL(simpleprocessnodelog) << getLogPrefix() << " input " << numInput << " got a new input" << std::endl;
+
+	boost::mutex::scoped_lock lock(_inputDirtyMutex);
 
 	_inputDirty[numInput] = true;
+
+	// since InputSet* signals are modified signals, we have to treat them as 
+	// such as well and propagate the Modified signal
+	sendModifiedSignals();
 }
 
 template <typename LockingStrategy>
 void
 SimpleProcessNode<LockingStrategy>::onInputSetToSharedPointer(const InputSetToSharedPointerBase& signal, int numInput) {
 
-	LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] input " << numInput << " got a new input (shared pointer)" << std::endl;
+	LOG_ALL(simpleprocessnodelog) << getLogPrefix() << " input " << numInput << " got a new input (shared pointer)" << std::endl;
+
+	boost::mutex::scoped_lock lock(_inputDirtyMutex);
 
 	// shared pointer inputs are never dirty
 	_inputDirty[numInput] = false;
@@ -237,7 +246,9 @@ template <typename LockingStrategy>
 void
 SimpleProcessNode<LockingStrategy>::onInputAdded(const InputAddedBase& signal, int numMultiInput) {
 
-	LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] multi-input " << numMultiInput << " got a new input" << std::endl;
+	LOG_ALL(simpleprocessnodelog) << getLogPrefix() << " multi-input " << numMultiInput << " got a new input" << std::endl;
+
+	boost::mutex::scoped_lock lock(_inputDirtyMutex);
 
 	// add a new dirty flag for this multi-input's new input
 	_multiInputDirty[numMultiInput].push_back(true);
@@ -247,7 +258,9 @@ template <typename LockingStrategy>
 void
 SimpleProcessNode<LockingStrategy>::onInputsCleared(const InputsCleared& signal, int numMultiInput) {
 
-	LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] multi-input " << numMultiInput << " was cleared" << std::endl;
+	LOG_ALL(simpleprocessnodelog) << getLogPrefix() << " multi-input " << numMultiInput << " was cleared" << std::endl;
+
+	boost::mutex::scoped_lock lock(_inputDirtyMutex);
 
 	// clear all flags for this multi-input
 	_multiInputDirty[numMultiInput].clear();
@@ -257,12 +270,13 @@ template <typename LockingStrategy>
 void
 SimpleProcessNode<LockingStrategy>::onMultiInputModified(const Modified& signal, int numInput, int numMultiInput) {
 
-	LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] multi-input " << numMultiInput << " was modified in input " << numInput << std::endl;
+	LOG_ALL(simpleprocessnodelog) << getLogPrefix() << " multi-input " << numMultiInput << " was modified in input " << numInput << std::endl;
+
+	boost::mutex::scoped_lock lock(_inputDirtyMutex);
 
 	_multiInputDirty[numMultiInput][numInput] = true;
 
-	for (int i = 0; i < _numOutputs; i++)
-		_modified[i]();
+	sendModifiedSignals();
 }
 
 template <typename LockingStrategy>
@@ -271,19 +285,25 @@ SimpleProcessNode<LockingStrategy>::onUpdate(const Update& signal, int numOutput
 
 	boost::mutex::scoped_lock lock(_updateMutex);
 
-	LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] input update requested by another process node" << std::endl;
+	LOG_ALL(simpleprocessnodelog) << getLogPrefix() << " input update requested by another process node" << std::endl;
 
-	if (haveDirtyInput()) {
+	{
+		boost::mutex::scoped_lock inputDirtyLock(_inputDirtyMutex);
 
-		// our inputs changed -- need to recompute the output
-		setOutputsDirty();
+		if (haveDirtyInput()) {
 
-		LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] I have some dirty inputs -- sending update signals" << std::endl;
+			inputDirtyLock.unlock();
 
-		sendUpdateSignals();
+			// our inputs changed -- need to recompute the output
+			setOutputsDirty();
+
+			LOG_ALL(simpleprocessnodelog) << getLogPrefix() << " I have some dirty inputs -- sending update signals" << std::endl;
+
+			sendUpdateSignals();
+		}
 	}
 
-	/* Here a race condition can occure: While we are sending the update signals
+	/* Here a race condition can occur: While we are sending the update signals
 	 * to the inputs, a Modified signal might have been sent by another thread,
 	 * resulting in a dirty input right after the update. This is okay, since we
 	 * also send Modified to the next node. But with the following code, we set
@@ -310,7 +330,7 @@ SimpleProcessNode<LockingStrategy>::onUpdate(const Update& signal, int numOutput
 
 	} else {
 
-		LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] outputs are still up-to-date" << std::endl;
+		LOG_ALL(simpleprocessnodelog) << getLogPrefix() << " outputs are still up-to-date" << std::endl;
 	}
 }
 
@@ -320,19 +340,29 @@ SimpleProcessNode<LockingStrategy>::sendUpdateSignals() {
 
 	boost::thread_group workers;
 
+	// TODO: this number can be subject to race conditions
 	unsigned int numDirties = numDirtyInputs();
 
 	// ask all dirty inputs for updates
-	for (int i = 0; i < _numInputs; i++)
+	for (int i = 0; i < _numInputs; i++) {
+
+		// lock access to _inputDirty to avoid race conditions
+		boost::mutex::scoped_lock inputDirtyLock(_inputDirtyMutex);
+
 		if (_inputDirty[i]) {
 
-			LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] sending update signal to input " << i << std::endl;
+			LOG_ALL(simpleprocessnodelog) << getLogPrefix() << " sending update signal to input " << i << std::endl;
 
 			_inputDirty[i] = false;
 
+			// release lock on _inputDirty, since the subsequent calls can cause 
+			// Modified signals to be sent to us, which will try to aquire the 
+			// lock as well
+			inputDirtyLock.unlock();
+
 			bool doItYourself = false;
 
-			if (numDirties == 1) {
+			if (numDirties <= 1) {
 
 				doItYourself = true;
 
@@ -342,14 +372,14 @@ SimpleProcessNode<LockingStrategy>::sendUpdateSignals() {
 
 				if (_numThreads == 0) {
 
-					LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] no more free threads available, will do it myself" << std::endl;
+					LOG_ALL(simpleprocessnodelog) << getLogPrefix() << " no more free threads available, will do it myself" << std::endl;
 					doItYourself = true;
 
 				} else {
 
 					_numThreads--;
 
-					LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] launching worker thread" << std::endl;
+					LOG_ALL(simpleprocessnodelog) << getLogPrefix() << " launching worker thread" << std::endl;
 					workers.create_thread(boost::ref(_inputUpdate[i]));
 				}
 			}
@@ -358,25 +388,34 @@ SimpleProcessNode<LockingStrategy>::sendUpdateSignals() {
 
 			if (doItYourself) {
 
-				LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] asking for update myself" << std::endl;
+				LOG_ALL(simpleprocessnodelog) << getLogPrefix() << " asking for update myself" << std::endl;
 				_inputUpdate[i]();
-				LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] updated" << std::endl;
+				LOG_ALL(simpleprocessnodelog) << getLogPrefix() << " input " << i << " updated" << std::endl;
 			}
 		}
+	}
 
 	// ask all dirty multi-inputs for updates
 	for (int i = 0; i < _numMultiInputs; i++)
-		for (int j = 0; j < _multiInputDirty[i].size(); j++)
+		for (int j = 0; j < _multiInputDirty[i].size(); j++) {
+
+			// lock access to _multiInputDirty to avoid race conditions
+			boost::mutex::scoped_lock inputDirtyLock(_inputDirtyMutex);
+
 			if (_multiInputDirty[i][j]) {
 
-				LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] sending update signal to multi-input " << i << ", input " << j << std::endl;
+				LOG_ALL(simpleprocessnodelog) << getLogPrefix() << " sending update signal to multi-input " << i << ", input " << j << std::endl;
 
 				_multiInputDirty[i][j] = false;
 
+				// release lock on _inputDirty, since the subsequent calls can 
+				// cause Modified signals to be sent to us, which will try to 
+				// aquire the lock as well
+				inputDirtyLock.unlock();
+
 				bool doItYourself = false;
 
-
-				if (numDirties == 1) {
+				if (numDirties <= 1) {
 
 					doItYourself = true;
 
@@ -386,14 +425,14 @@ SimpleProcessNode<LockingStrategy>::sendUpdateSignals() {
 
 					if (_numThreads == 0) {
 
-						LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] no more free threads available, will do it myself" << std::endl;
+						LOG_ALL(simpleprocessnodelog) << getLogPrefix() << " no more free threads available, will do it myself" << std::endl;
 						doItYourself = true;
 
 					} else {
 
 						_numThreads--;
 
-						LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] launching worker thread" << std::endl;
+						LOG_ALL(simpleprocessnodelog) << getLogPrefix() << " launching worker thread" << std::endl;
 						workers.create_thread(boost::ref((*_multiInputUpdates[i])[j]));
 					}
 				}
@@ -402,17 +441,18 @@ SimpleProcessNode<LockingStrategy>::sendUpdateSignals() {
 
 				if (doItYourself) {
 
-					LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] asking for update myself" << std::endl;
+					LOG_ALL(simpleprocessnodelog) << getLogPrefix() << " asking for update myself" << std::endl;
 					(*_multiInputUpdates[i])[j]();
-					LOG_ALL(simpleprocessnodelog) << "[" << typeName(this) << "] updated" << std::endl;
+					LOG_ALL(simpleprocessnodelog) << getLogPrefix() << " multi-input " << i << ", input " << j << " updated" << std::endl;
 				}
 			}
+		}
 
 	if (workers.size() > 0) {
 
-		LOG_DEBUG(simpleprocessnodelog) << "[" << typeName(this) << "] waiting for all workers to finish..." << std::endl;
+		LOG_ALL(simpleprocessnodelog) << getLogPrefix() << " waiting for all workers to finish..." << std::endl;
 		workers.join_all();
-		LOG_DEBUG(simpleprocessnodelog) << "[" << typeName(this) << "] workers finished" << std::endl;
+		LOG_ALL(simpleprocessnodelog) << getLogPrefix() << " workers finished" << std::endl;
 
 		boost::mutex::scoped_lock lock(_threadCountMutex);
 
