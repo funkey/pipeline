@@ -269,7 +269,8 @@ class OutputTypeDispatch<false, T> : public OutputImpl<Wrap<T> > {
 
 public:
 
-	OutputTypeDispatch() {};
+	OutputTypeDispatch() :
+		OutputImpl<Wrap<T> >(new Wrap<T>()) {};
 
 	template <typename S>
 	OutputTypeDispatch(const S& data) :
