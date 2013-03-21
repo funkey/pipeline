@@ -3,6 +3,8 @@
 
 #include <pipeline/all.h>
 
+namespace pipeline {
+
 template <class Operator>
 class Process {
 
@@ -25,6 +27,8 @@ private:
 
 	boost::shared_ptr<Operator> _operator;
 };
+
+} // namespace pipeline
 
 #endif // PIPELINE_PROCESS_H__
 
