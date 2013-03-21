@@ -2,6 +2,7 @@
 #define PIPELINE_VALUE_H__
 
 #include <pipeline/all.h>
+#include <pipeline/Process.h>
 
 namespace pipeline {
 
@@ -20,11 +21,11 @@ class Value {
 
 private:
 
-	class ValueUpdater : public pipeline::SimpleProcessNode<> {
+	class UpdateValue : public pipeline::SimpleProcessNode<> {
 
 	public:
 
-		ValueUpdater() {
+		UpdateValue() {
 
 			registerInput(_data, "data");
 		}
@@ -48,30 +49,22 @@ public:
 	template <typename S>
 	Value(Value<S>& other) {
 
-		createUpdater();
-
-		_updater->setInput(other._updater->getInput().getAssignedOutput());
+		_updateValue->setInput(other._updateValue->getInput().getAssignedOutput());
 	}
 
 	Value(pipeline::OutputBase& output) {
 
-		createUpdater();
-
-		_updater->setInput(output);
+		_updateValue->setInput(output);
 	}
 
 	Value<T>& operator=(Value<T>& other) {
 
-		createUpdater();
-
-		_updater->setInput(other._updater->getInput().getAssignedOutput());
+		_updateValue->setInput(other._updateValue->getInput().getAssignedOutput());
 	}
 
 	Value<T>& operator=(pipeline::OutputBase& output) {
 
-		createUpdater();
-
-		_updater->setInput(output);
+		_updateValue->setInput(output);
 	}
 
 	operator boost::shared_ptr<T>() {
@@ -91,19 +84,14 @@ public:
 
 	boost::shared_ptr<T> get() {
 
-		return _updater->get();
+		return _updateValue->get();
 	}
 
 private:
 
 	Value() {}
 
-	void createUpdater() {
-
-		_updater = boost::make_shared<ValueUpdater>();
-	}
-
-	boost::shared_ptr<ValueUpdater> _updater;
+	Process<UpdateValue> _updateValue;
 };
 
 } // namespace pipeline
