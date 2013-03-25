@@ -5,7 +5,7 @@
 
 namespace pipeline {
 
-template <class Operator>
+template <class Operator = ProcessNode>
 class Process {
 
 public:
@@ -18,14 +18,30 @@ public:
 	template <typename A1, typename A2>
 	Process(A1 a1, A2 a2) : _operator(boost::make_shared<Operator>(a1, a2)) {}
 
+	template <typename A1, typename A2, typename A3>
+	Process(A1 a1, A2 a2, A3 a3) : _operator(boost::make_shared<Operator>(a1, a2, a3)) {}
+
+	template <typename A1, typename A2, typename A3, typename A4>
+	Process(A1 a1, A2 a2, A3 a3, A4 a4) : _operator(boost::make_shared<Operator>(a1, a2, a3, a4)) {}
+
 	Operator* operator->() {
 
 		return _operator.get();
 	}
 
+	template <class OtherOperator>
+	Process<Operator>& operator=(const Process<OtherOperator>& other) {
+
+		_operator = other._operator;
+		return *this;
+	}
+
 private:
 
 	boost::shared_ptr<Operator> _operator;
+
+	template <class OtherOperator>
+	friend class Process;
 };
 
 } // namespace pipeline
