@@ -24,6 +24,12 @@ public:
 	template <typename A1, typename A2, typename A3, typename A4>
 	Process(A1 a1, A2 a2, A3 a3, A4 a4) : _operator(boost::make_shared<Operator>(a1, a2, a3, a4)) {}
 
+	template <typename A1, typename A2, typename A3, typename A4, typename A5>
+	Process(A1 a1, A2 a2, A3 a3, A4 a4, A5 a5) : _operator(boost::make_shared<Operator>(a1, a2, a3, a4, a5)) {}
+
+	template <typename A1, typename A2, typename A3, typename A4, typename A5, typename A6>
+	Process(A1 a1, A2 a2, A3 a3, A4 a4, A5 a5, A6 a6) : _operator(boost::make_shared<Operator>(a1, a2, a3, a4, a5, a6)) {}
+
 	Operator* operator->() {
 
 		return _operator.get();
