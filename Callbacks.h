@@ -16,6 +16,8 @@ class CallbacksBase {
 
 public:
 
+	virtual ~CallbacksBase() {}
+
 	virtual void registerAtInput(InputBase& input, unsigned int numInput) = 0;
 
 	virtual void registerAtInput(InputBase& input, unsigned int numInput, ProcessNode* processNode) = 0;
