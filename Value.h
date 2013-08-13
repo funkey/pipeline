@@ -132,11 +132,6 @@ public:
 		return get().operator->();
 	}
 
-private:
-
-	// ProcessNode is allowed to access a value's shared pointer
-	friend class ProcessNode;
-
 	/**
 	 * Conversion operator to boost::shared_ptr<T>.
 	 *
@@ -146,6 +141,11 @@ private:
 
 		return get();
 	}
+
+private:
+
+	// ProcessNode is allowed to access a value's shared pointer
+	friend class ProcessNode;
 
 	/**
 	 * Get a boost::shared_ptr to the data stored by this pipeline value.
