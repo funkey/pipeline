@@ -198,7 +198,7 @@ SimpleProcessNode<LockingStrategy>::setDirty(OutputBase& output) {
 
 template <typename LockingStrategy>
 void
-SimpleProcessNode<LockingStrategy>::onInputModified(const Modified& signal, int numInput) {
+SimpleProcessNode<LockingStrategy>::onInputModified(const Modified& /*signal*/, int numInput) {
 
 	LOG_ALL(simpleprocessnodelog) << getLogPrefix() << " input " << numInput << " was modified" << std::endl;
 
@@ -211,7 +211,7 @@ SimpleProcessNode<LockingStrategy>::onInputModified(const Modified& signal, int 
 
 template <typename LockingStrategy>
 void
-SimpleProcessNode<LockingStrategy>::onInputSet(const InputSetBase& signal, int numInput) {
+SimpleProcessNode<LockingStrategy>::onInputSet(const InputSetBase& /*signal*/, int numInput) {
 
 	LOG_ALL(simpleprocessnodelog) << getLogPrefix() << " input " << numInput << " got a new input" << std::endl;
 
@@ -226,7 +226,7 @@ SimpleProcessNode<LockingStrategy>::onInputSet(const InputSetBase& signal, int n
 
 template <typename LockingStrategy>
 void
-SimpleProcessNode<LockingStrategy>::onInputSetToSharedPointer(const InputSetToSharedPointerBase& signal, int numInput) {
+SimpleProcessNode<LockingStrategy>::onInputSetToSharedPointer(const InputSetToSharedPointerBase& /*signal*/, int numInput) {
 
 	LOG_ALL(simpleprocessnodelog) << getLogPrefix() << " input " << numInput << " got a new input (shared pointer)" << std::endl;
 
@@ -244,7 +244,7 @@ SimpleProcessNode<LockingStrategy>::onInputSetToSharedPointer(const InputSetToSh
 
 template <typename LockingStrategy>
 void
-SimpleProcessNode<LockingStrategy>::onInputAdded(const InputAddedBase& signal, int numMultiInput) {
+SimpleProcessNode<LockingStrategy>::onInputAdded(const InputAddedBase& /*signal*/, int numMultiInput) {
 
 	LOG_ALL(simpleprocessnodelog) << getLogPrefix() << " multi-input " << numMultiInput << " got a new input" << std::endl;
 
@@ -256,7 +256,7 @@ SimpleProcessNode<LockingStrategy>::onInputAdded(const InputAddedBase& signal, i
 
 template <typename LockingStrategy>
 void
-SimpleProcessNode<LockingStrategy>::onInputsCleared(const InputsCleared& signal, int numMultiInput) {
+SimpleProcessNode<LockingStrategy>::onInputsCleared(const InputsCleared& /*signal*/, int numMultiInput) {
 
 	LOG_ALL(simpleprocessnodelog) << getLogPrefix() << " multi-input " << numMultiInput << " was cleared" << std::endl;
 
@@ -268,7 +268,7 @@ SimpleProcessNode<LockingStrategy>::onInputsCleared(const InputsCleared& signal,
 
 template <typename LockingStrategy>
 void
-SimpleProcessNode<LockingStrategy>::onMultiInputModified(const Modified& signal, int numInput, int numMultiInput) {
+SimpleProcessNode<LockingStrategy>::onMultiInputModified(const Modified& /*signal*/, int numInput, int numMultiInput) {
 
 	LOG_ALL(simpleprocessnodelog) << getLogPrefix() << " multi-input " << numMultiInput << " was modified in input " << numInput << std::endl;
 
@@ -281,7 +281,7 @@ SimpleProcessNode<LockingStrategy>::onMultiInputModified(const Modified& signal,
 
 template <typename LockingStrategy>
 void
-SimpleProcessNode<LockingStrategy>::onUpdate(const Update& signal, int numOutput) {
+SimpleProcessNode<LockingStrategy>::onUpdate(const Update& /*signal*/, int /*numOutput*/) {
 
 	boost::mutex::scoped_lock lock(_updateMutex);
 
@@ -397,7 +397,7 @@ SimpleProcessNode<LockingStrategy>::sendUpdateSignals() {
 
 	// ask all dirty multi-inputs for updates
 	for (int i = 0; i < _numMultiInputs; i++)
-		for (int j = 0; j < _multiInputDirty[i].size(); j++) {
+		for (unsigned int j = 0; j < _multiInputDirty[i].size(); j++) {
 
 			// lock access to _multiInputDirty to avoid race conditions
 			boost::mutex::scoped_lock inputDirtyLock(_inputDirtyMutex);
@@ -482,7 +482,7 @@ SimpleProcessNode<LockingStrategy>::haveDirtyInput() {
 
 	// check multi-inputs
 	for (int i = 0; i < _numMultiInputs; i++)
-		for (int j = 0; j < _multiInputDirty[i].size(); j++)
+		for (unsigned int j = 0; j < _multiInputDirty[i].size(); j++)
 			if (_multiInputDirty[i][j])
 				return true;
 
@@ -502,7 +502,7 @@ SimpleProcessNode<LockingStrategy>::numDirtyInputs() {
 
 	// check multi-inputs
 	for (int i = 0; i < _numMultiInputs; i++)
-		for (int j = 0; j < _multiInputDirty[i].size(); j++)
+		for (unsigned int j = 0; j < _multiInputDirty[i].size(); j++)
 			if (_multiInputDirty[i][j])
 				numDirties++;
 
@@ -524,7 +524,7 @@ template <typename LockingStrategy>
 void
 SimpleProcessNode<LockingStrategy>::setOutputsDirty(bool dirty) {
 
-	for (int i = 0; i < _outputDirty.size(); i++)
+	for (unsigned int i = 0; i < _outputDirty.size(); i++)
 		_outputDirty[i] = dirty;
 }
 
