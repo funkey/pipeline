@@ -1,1 +1,1 @@
-define_module(pipeline LIBRARY INCLUDES util signals LINKS boost)
+define_module(pipeline LIBRARY LINKS utils signals boost)
