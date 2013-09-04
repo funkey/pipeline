@@ -1,1 +1,1 @@
-define_module(pipeline LIBRARY LINKS utils signals boost)
+define_module(pipeline LIBRARY LINKS util signals boost INCLUDES ${CMAKE_CURRENT_SOURCE_DIR}/..)
