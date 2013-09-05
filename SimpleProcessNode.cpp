@@ -330,6 +330,11 @@ SimpleProcessNode<LockingStrategy>::onUpdate(const Update& /*signal*/, int /*num
 
 	} else {
 
+		if (!requiredInputsPresent()) {
+
+			LOG_ERROR(simpleprocessnodelog) << getLogPrefix() << " asking for update, but not all required inputs are present!" << std::endl;
+		}
+
 		LOG_ALL(simpleprocessnodelog) << getLogPrefix() << " outputs are still up-to-date" << std::endl;
 	}
 }

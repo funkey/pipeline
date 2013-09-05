@@ -208,7 +208,7 @@ private:
 
 	bool requiredInputsPresent();
 
-	std::string getLogPrefix() { return std::string("[") + typeName(*this) + (_name.size() ? std::string("(") + _name + ")]" : ""); }
+	std::string getLogPrefix() { return std::string("[") + typeName(*this) + (_name.size() ? std::string("(") + _name + ")]" : "]"); }
 
 	// one boolean for each input
 	std::vector<bool> _inputDirty;
