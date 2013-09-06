@@ -106,6 +106,34 @@ public:
 
 	const std::string& getName() { return _name; }
 
+	/**
+	 * Clear all the assignments of a multi-input.
+	 *
+	 * @param i The number of the multi-input.
+	 *
+	 * Overwritten from ProcessNode, locks with update.
+	 */
+	void clearInputs(unsigned int i) {
+
+		boost::mutex::scoped_lock lock(_inputMutex);
+
+		ProcessNode::clearInputs(i);
+	}
+
+	/**
+	 * Clear all the assignments of a multi-input.
+	 *
+	 * @param name The name of the multi-input.
+	 *
+	 * Overwritten from ProcessNode, locks with update.
+	 */
+	void clearInputs(const std::string& name) {
+
+		boost::mutex::scoped_lock lock(_inputMutex);
+
+		ProcessNode::clearInputs(name);
+	}
+
 protected:
 
 	/**
@@ -248,6 +276,9 @@ private:
 
 	// a mutex to protect access to the _[multiI|i]nputDirty vectors
 	boost::mutex _inputDirtyMutex;
+
+	// a mutex to protect changes to the inputs
+	boost::mutex _inputMutex;
 
 	// the maximal number of threads
 	static int _numThreads;

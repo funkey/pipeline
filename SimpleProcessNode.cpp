@@ -42,6 +42,8 @@ template <typename LockingStrategy>
 void
 SimpleProcessNode<LockingStrategy>::registerInput(InputBase& input, std::string name, InputType inputType) {
 
+	boost::mutex::scoped_lock inputLock(_inputMutex);
+
 	LOG_ALL(simpleprocessnodelog) << getLogPrefix() << " got a new input " << name << std::endl;
 
 	ProcessNode::registerInput(input, name);
@@ -342,6 +344,8 @@ SimpleProcessNode<LockingStrategy>::onUpdate(const Update& /*signal*/, int /*num
 template <typename LockingStrategy>
 void
 SimpleProcessNode<LockingStrategy>::sendUpdateSignals() {
+
+	boost::mutex::scoped_lock inputLock(_inputMutex);
 
 	boost::thread_group workers;
 
