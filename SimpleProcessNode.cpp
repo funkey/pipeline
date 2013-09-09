@@ -1,5 +1,3 @@
-#include <boost/thread/thread.hpp>
-
 #include <util/ProgramOptions.h>
 #include "InputSignals.h"
 #include "ProcessNode.h"

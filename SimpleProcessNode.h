@@ -1,9 +1,18 @@
 #ifndef PIPELINE_SIMPLE_PROCESS_NODE_H__
 #define PIPELINE_SIMPLE_PROCESS_NODE_H__
 
+#include <boost/thread/thread.hpp>
 #include <boost/thread/mutex.hpp>
+#include <boost/bind.hpp>
 
+#include <signals/Slot.h>
+#include <signals/Slots.h>
 #include <pipeline/signals/all.h>
+#include <pipeline/Data.h>
+#include <pipeline/Input.h>
+#include <pipeline/Inputs.h>
+#include <pipeline/Output.h>
+#include <pipeline/ProcessNode.h>
 
 namespace pipeline {
 
