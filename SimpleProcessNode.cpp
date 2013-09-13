@@ -49,6 +49,7 @@ SimpleProcessNode<LockingStrategy>::registerInput(InputBase& input, std::string 
 	int numInput = _numInputs;
 
 	_inputDirty.push_back(true);
+	_inputDirtys.push_back(std::vector<int>());
 
 	_inputUpdate.addSlot();
 
@@ -86,6 +87,8 @@ SimpleProcessNode<LockingStrategy>::registerInput(InputBase& input, std::string 
 	// register the appropriate update signal for this input
 	input.registerBackwardSlot(_inputUpdate[numInput]);
 
+	_inputNums[&input] = numInput;
+
 	_numInputs++;
 
 	setOutputsDirty();
@@ -102,6 +105,7 @@ SimpleProcessNode<LockingStrategy>::registerInputs(MultiInput& input, std::strin
 	int numMultiInput = _numMultiInputs;
 
 	_multiInputDirty.push_back(std::vector<bool>());
+	_multiInputDirtys.push_back(std::vector<int>());
 	_multiInputUpdates.push_back(new signals::Slots<Update>());
 
 	// create signal callbacks that store the number of the multi-input with them
@@ -116,6 +120,8 @@ SimpleProcessNode<LockingStrategy>::registerInputs(MultiInput& input, std::strin
 
 	// register the appropriate update signal for this input
 	input.registerBackwardSlots(*_multiInputUpdates[numMultiInput]);
+
+	_multiInputNums[&input] = numMultiInput;
 
 	_numMultiInputs++;
 
@@ -148,6 +154,26 @@ SimpleProcessNode<LockingStrategy>::registerOutput(OutputBase& output, std::stri
 	_outputNums[&output] = numOutput;
 
 	_numOutputs++;
+}
+
+template <typename LockingStrategy>
+void
+SimpleProcessNode<LockingStrategy>::setDependency(InputBase& input, OutputBase& output) {
+
+	int inputNum  = _inputNums[&input];
+	int outputNum = _outputNums[&output];
+
+	_inputDirtys[inputNum].push_back(outputNum);
+}
+
+template <typename LockingStrategy>
+void
+SimpleProcessNode<LockingStrategy>::setDependency(MultiInput& input, OutputBase& output) {
+
+	int multiInputNum = _multiInputNums[&input];
+	int outputNum     = _outputNums[&output];
+
+	_multiInputDirtys[multiInputNum].push_back(outputNum);
 }
 
 /**
@@ -206,7 +232,7 @@ SimpleProcessNode<LockingStrategy>::onInputModified(const Modified& /*signal*/, 
 
 	_inputDirty[numInput] = true;
 
-	sendModifiedSignals();
+	sendModifiedSignals(numInput);
 }
 
 template <typename LockingStrategy>
@@ -221,7 +247,7 @@ SimpleProcessNode<LockingStrategy>::onInputSet(const InputSetBase& /*signal*/, i
 
 	// since InputSet* signals are modified signals, we have to treat them as 
 	// such as well and propagate the Modified signal
-	sendModifiedSignals();
+	sendModifiedSignals(numInput);
 }
 
 template <typename LockingStrategy>
@@ -239,7 +265,7 @@ SimpleProcessNode<LockingStrategy>::onInputSetToSharedPointer(const InputSetToSh
 	setOutputsDirty();
 
 	// shared pointers can't talk, so send the modified signal ourselves
-	sendModifiedSignals();
+	sendModifiedSignals(numInput);
 }
 
 template <typename LockingStrategy>
@@ -276,7 +302,7 @@ SimpleProcessNode<LockingStrategy>::onMultiInputModified(const Modified& /*signa
 
 	_multiInputDirty[numMultiInput][numInput] = true;
 
-	sendModifiedSignals();
+	sendModifiedSignals(numInput, numMultiInput);
 }
 
 template <typename LockingStrategy>
@@ -469,11 +495,33 @@ SimpleProcessNode<LockingStrategy>::sendUpdateSignals() {
 
 template <typename LockingStrategy>
 void
-SimpleProcessNode<LockingStrategy>::sendModifiedSignals() {
+SimpleProcessNode<LockingStrategy>::sendModifiedSignals(int numInput, int numMultiInput = -1) {
 
-	// send modified to all outputs
-	// TODO: let the user decide, which outputs do get dirty on which input
-	// change
+	// first, check if the user has set an input-output dirty mapping and use 
+	// it, if present
+
+	if (numMultiInput == -1) {
+
+		if (_inputDirtys[numInput].size() > 0) {
+
+			foreach (int i, _inputDirtys[numInput])
+				_modified[i]();
+
+			return;
+		}
+
+	} else {
+
+		if (_multiInputDirtys[numMultiInput].size() > 0) {
+
+			foreach (int i, _multiInputDirtys[numMultiInput])
+				_modified[i]();
+
+			return;
+		}
+	}
+
+	// otherwise, send modified to all outputs
 	for (int i = 0; i < _numOutputs; i++)
 		_modified[i]();
 }

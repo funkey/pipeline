@@ -161,6 +161,15 @@ protected:
 	void registerOutput(OutputBase& output, std::string name);
 
 	/**
+	 * Register an input-output dependency. Modified signals will only be sent 
+	 * to the registered outputs if the respective input is changing. If there 
+	 * are no outputs registered for an input, the modified signal will be sent 
+	 * to all outputs of the process node.
+	 */
+	void setDependency(InputBase&  input, OutputBase& output);
+	void setDependency(MultiInput& input, OutputBase& output);
+
+	/**
 	 * Overwrite this method in derived classes to (re)compute the output.
 	 * Within this method you can assume that all inputs are up-to-date.
 	 *
@@ -233,7 +242,7 @@ private:
 	// thread save (by locking)
 	void sendUpdateSignals();
 
-	void sendModifiedSignals();
+	void sendModifiedSignals(int numIntput, int numMultiInput);
 
 	bool haveDirtyInput();
 
@@ -252,6 +261,14 @@ private:
 
 	// a vector of booleans for each multi-input
 	std::vector<std::vector<bool> > _multiInputDirty;
+
+	// a list of outputs that get dirty for each [mulit]input
+	std::vector<std::vector<int> > _inputDirtys;
+	std::vector<std::vector<int> > _multiInputDirtys;
+
+	// a look-up table from [multi]inputs to their number
+	std::map<InputBase*, unsigned int> _inputNums;
+	std::map<InputBase*, unsigned int> _multiInputNums;
 
 	// one update slot for each input
 	signals::Slots<Update>  _inputUpdate;
