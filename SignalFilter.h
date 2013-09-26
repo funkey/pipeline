@@ -140,7 +140,7 @@ protected:
 	 *         Implementations should return false, if the given signal should 
 	 *         not be forwarded.
 	 */
-	virtual bool filter(FallbackSignalType& signal) {}
+	virtual bool filter(FallbackSignalType& signal) { return true; }
 
 	/**
 	 * Filter method for one-to-many filters (from one output to several 
@@ -151,7 +151,7 @@ protected:
 	 *         Implementations should return false, if the given signal should 
 	 *         not be forwarded.
 	 */
-	virtual bool filter(FallbackSignalType& signal, unsigned int input) {}
+	virtual bool filter(FallbackSignalType& signal, unsigned int input) { return true; }
 
 	void filterBackward(pipeline::OutputBase& output, pipeline::InputBase&  input,  pipeline::ProcessNode* processNode) {}
 	void filterBackward(pipeline::OutputBase& output, pipeline::MultiInput& inputs, pipeline::ProcessNode* processNode) {}
