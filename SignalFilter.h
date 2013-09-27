@@ -111,7 +111,7 @@ private:
 			return;
 
 		// for each registered input to this multi-slot
-		for (int i = 0; i < _slots.size(); i++) {
+		for (unsigned int i = 0; i < _slots.size(); i++) {
 
 			// create a copy of the signal
 			SignalType copy = signal;
@@ -140,7 +140,7 @@ protected:
 	 *         Implementations should return false, if the given signal should 
 	 *         not be forwarded.
 	 */
-	virtual bool filter(FallbackSignalType& signal) { return true; }
+	virtual bool filter(FallbackSignalType& /*signal*/) { return true; }
 
 	/**
 	 * Filter method for one-to-many filters (from one output to several 
@@ -151,10 +151,10 @@ protected:
 	 *         Implementations should return false, if the given signal should 
 	 *         not be forwarded.
 	 */
-	virtual bool filter(FallbackSignalType& signal, unsigned int input) { return true; }
+	virtual bool filter(FallbackSignalType& /*signal*/, unsigned int /*input*/) { return true; }
 
-	void filterBackward(pipeline::OutputBase& output, pipeline::InputBase&  input,  pipeline::ProcessNode* processNode) {}
-	void filterBackward(pipeline::OutputBase& output, pipeline::MultiInput& inputs, pipeline::ProcessNode* processNode) {}
+	void filterBackward(pipeline::OutputBase& /*output*/, pipeline::InputBase&  /*input*/,  pipeline::ProcessNode* /*processNode*/) {}
+	void filterBackward(pipeline::OutputBase& /*output*/, pipeline::MultiInput& /*inputs*/, pipeline::ProcessNode* /*processNode*/) {}
 
 };
 
