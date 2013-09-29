@@ -121,6 +121,13 @@ private:
 
 			// send signal to registered inputs
 			_slots[i](copy);
+
+			// if signal was processed, we are done
+			if (copy.processed) {
+
+				signal.processed = true;
+				break;
+			}
 		}
 	}
 
