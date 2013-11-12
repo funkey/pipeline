@@ -1,6 +1,8 @@
 #ifndef PIPELINE_WRAP_H__
 #define PIPELINE_WRAP_H__
 
+#include <boost/make_shared.hpp>
+
 #include "Data.h"
 
 namespace pipeline {
@@ -10,19 +12,17 @@ class Wrap : public Data {
 
 public:
 
-	Wrap() {}
-
-	Wrap(const T& value) :
+	Wrap(boost::shared_ptr<T> value = boost::make_shared<T>()) :
 		_value(value) {}
 
 	T& get() {
 
-		return _value;
+		return *_value;
 	}
 
 private:
 
-	T _value;
+	boost::shared_ptr<T> _value;
 };
 
 } // namespace pipeline
