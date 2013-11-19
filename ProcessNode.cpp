@@ -106,6 +106,8 @@ ProcessNode::addInput(InputBase& input) {
 
 	if (input.hasAssignedOutput())
 		return getMultiInput().accept(input.getAssignedOutput());
+	else
+		return getMultiInput().accept(input.getAssignedSharedPtr());
 
 	return false;
 }
@@ -115,6 +117,8 @@ ProcessNode::addInput(unsigned int i, InputBase& input) {
 
 	if (input.hasAssignedOutput())
 		return getMultiInput(i).accept(input.getAssignedOutput());
+	else
+		return getMultiInput(i).accept(input.getAssignedSharedPtr());
 
 	return false;
 }
@@ -124,6 +128,8 @@ ProcessNode::addInput(const std::string& name, InputBase& input) {
 
 	if (input.hasAssignedOutput())
 		return getMultiInput(name).accept(input.getAssignedOutput());
+	else
+		return getMultiInput(name).accept(input.getAssignedSharedPtr());
 
 	return false;
 }
