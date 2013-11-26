@@ -303,7 +303,7 @@ public:
 	/**
 	 * Get the current number of inputs.
 	 */
-	unsigned int size() {
+	unsigned int size() const {
 
 		return _inputs.size();
 	}
@@ -311,7 +311,7 @@ public:
 	/**
 	 * Return true if at least one input is present.
 	 */
-	operator bool() {
+	operator bool() const {
 
 		return size() > 0;
 	}

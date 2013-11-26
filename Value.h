@@ -182,6 +182,23 @@ public:
 	}
 
 	/**
+	 * Creates a pipeline value from the input of a process node.
+	 *
+	 * Usage example:
+	 *
+	 *   Value<Image> inputImage = watershed->getInput("image");
+	 *
+	 *   int width = inputImage->getWidth();
+	 */
+	Value(const pipeline::Input<T>& input) {
+
+		if (input.hasAssignedOutput())
+			getUpdateProcessNode()->setInput(input.getAssignedOutput());
+		else
+			getUpdateProcessNode()->setInput(input.getAssignedSharedPtr());
+	}
+
+	/**
 	 * Create a pipeline value from an existing object.
 	 */
 	Value(const T& value) {

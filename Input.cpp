@@ -20,13 +20,13 @@ InputBase::registerBackwardCallback(signals::CallbackBase& callback) {
 }
 
 bool
-InputBase::hasAssignedOutput() {
+InputBase::hasAssignedOutput() const {
 
 	return _assignedOutput != 0;
 }
 
 OutputBase&
-InputBase::getAssignedOutput() {
+InputBase::getAssignedOutput() const {
 
 	return *_assignedOutput;
 }

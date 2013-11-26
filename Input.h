@@ -129,14 +129,14 @@ public:
 	 * Returns true, if this input was assigned an output (it can still have a
 	 * value from a shared pointer, though.
 	 */
-	bool hasAssignedOutput();
+	bool hasAssignedOutput() const;
 
 	/**
 	 * Get a reference to the currently assigned output to this input.
 	 *
 	 * @return The currently assigned output.
 	 */
-	OutputBase& getAssignedOutput();
+	OutputBase& getAssignedOutput() const;
 
 	/**
 	 * Get a shared pointer to the currently assigned data.
@@ -163,7 +163,7 @@ public:
 	/**
 	 * Returns true, if this input is assigned.
 	 */
-	virtual operator bool() = 0;
+	virtual operator bool() const = 0;
 
 	signals::Sender& getBackwardSender();
 
@@ -320,7 +320,7 @@ public:
 		return *_data;
 	}
 
-	operator boost::shared_ptr<DataType>() {
+	operator boost::shared_ptr<DataType>() const {
 
 		return _data;
 	}
@@ -328,7 +328,7 @@ public:
 	/**
 	 * Return true if this input is assigned.
 	 */
-	operator bool() {
+	operator bool() const {
 
 		return _data;
 	}
@@ -377,7 +377,7 @@ public:
 		return &(InputImpl<Wrap<T> >::get()->get());
 	}
 
-	operator boost::shared_ptr<T>() {
+	operator boost::shared_ptr<T>() const {
 
 		return InputImpl<Wrap<T> >::get()->get_shared();
 	}
