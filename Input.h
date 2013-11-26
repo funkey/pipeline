@@ -376,6 +376,11 @@ public:
 
 		return &(InputImpl<Wrap<T> >::get()->get());
 	}
+
+	operator boost::shared_ptr<T>() {
+
+		return InputImpl<Wrap<T> >::get()->get_shared();
+	}
 };
 
 template <typename T>

@@ -20,6 +20,11 @@ public:
 		return *_value;
 	}
 
+	boost::shared_ptr<T> get_shared() {
+
+		return _value;
+	}
+
 	operator T&() {
 
 		return *_value;
