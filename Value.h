@@ -162,7 +162,7 @@ public:
 	template <typename S>
 	Value(Value<S>& other) {
 
-		getUpdateProcessNode()->setInput(other.getUpdateProcessNode()->getInput().getAssignedOutput());
+		getUpdateProcessNode()->setInput(other.getUpdateProcessNode()->getInput());
 	}
 
 	/**
@@ -192,10 +192,7 @@ public:
 	 */
 	Value(const pipeline::Input<T>& input) {
 
-		if (input.hasAssignedOutput())
-			getUpdateProcessNode()->setInput(input.getAssignedOutput());
-		else
-			getUpdateProcessNode()->setInput(input.getAssignedSharedPtr());
+		getUpdateProcessNode()->setInput(input);
 	}
 
 	/**
@@ -216,7 +213,7 @@ public:
 	template <typename S>
 	Value<T>& operator=(Value<S>& other) {
 
-		getUpdateProcessNode()->setInput(other.getUpdateProcessNode()->getInput().getAssignedOutput());
+		getUpdateProcessNode()->setInput(other.getUpdateProcessNode()->getInput());
 	}
 
 	/**

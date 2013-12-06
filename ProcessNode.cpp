@@ -57,7 +57,7 @@ ProcessNode::unsetInput(const std::string& name) {
 }
 
 bool
-ProcessNode::setInput(InputBase& input) {
+ProcessNode::setInput(const InputBase& input) {
 
 	if (input.hasAssignedOutput())
 		return getInput().accept(input.getAssignedOutput());
@@ -66,7 +66,7 @@ ProcessNode::setInput(InputBase& input) {
 }
 
 bool
-ProcessNode::setInput(unsigned int i, InputBase& input) {
+ProcessNode::setInput(unsigned int i, const InputBase& input) {
 
 	if (input.hasAssignedOutput())
 		return getInput(i).accept(input.getAssignedOutput());
@@ -75,7 +75,7 @@ ProcessNode::setInput(unsigned int i, InputBase& input) {
 }
 
 bool
-ProcessNode::setInput(const std::string& name, InputBase& input) {
+ProcessNode::setInput(const std::string& name, const InputBase& input) {
 
 	if (input.hasAssignedOutput())
 		return getInput(name).accept(input.getAssignedOutput());
@@ -102,7 +102,7 @@ ProcessNode::addInput(const std::string& name, OutputBase& output) {
 }
 
 bool
-ProcessNode::addInput(InputBase& input) {
+ProcessNode::addInput(const InputBase& input) {
 
 	if (input.hasAssignedOutput())
 		return getMultiInput().accept(input.getAssignedOutput());
@@ -113,7 +113,7 @@ ProcessNode::addInput(InputBase& input) {
 }
 
 bool
-ProcessNode::addInput(unsigned int i, InputBase& input) {
+ProcessNode::addInput(unsigned int i, const InputBase& input) {
 
 	if (input.hasAssignedOutput())
 		return getMultiInput(i).accept(input.getAssignedOutput());
@@ -124,7 +124,7 @@ ProcessNode::addInput(unsigned int i, InputBase& input) {
 }
 
 bool
-ProcessNode::addInput(const std::string& name, InputBase& input) {
+ProcessNode::addInput(const std::string& name, const InputBase& input) {
 
 	if (input.hasAssignedOutput())
 		return getMultiInput(name).accept(input.getAssignedOutput());

@@ -84,7 +84,7 @@ public:
 	 * @return true, if the input and data are compatible and the assignment
 	 *         has been made.
 	 */
-	bool setInput(InputBase& input);
+	bool setInput(const InputBase& input);
 
 	/**
 	 * Assign the ith input of this process node to the same value as another
@@ -94,7 +94,7 @@ public:
 	 * @return true, if the input and data are compatible and the assignment
 	 *         has been made.
 	 */
-	bool setInput(unsigned int i, InputBase& input);
+	bool setInput(unsigned int i, const InputBase& input);
 
 	/**
 	 * Assigns a named input of this process node to the same value as another
@@ -104,7 +104,7 @@ public:
 	 * @return true, if the input and data are compatible and the assignment
 	 *         has been made.
 	 */
-	bool setInput(const std::string& name, InputBase& input);
+	bool setInput(const std::string& name, const InputBase& input);
 
 	/**
 	 * Unset the first input of this process node.
@@ -157,7 +157,7 @@ public:
 	 * @return true, if the input and input are compatible and the assignment
 	 *         has been made.
 	 */
-	bool addInput(InputBase& input);
+	bool addInput(const InputBase& input);
 
 	/**
 	 * Adds the value of an input to the ith multi-input of this process node.
@@ -166,7 +166,7 @@ public:
 	 * @return true, if the input and input are compatible and the assignment
 	 *         has been made.
 	 */
-	bool addInput(unsigned int i, InputBase& input);
+	bool addInput(unsigned int i, const InputBase& input);
 
 	/**
 	 * Adds the value of an input to a named multi-input of this process node.
@@ -175,7 +175,7 @@ public:
 	 * @return true, if the input and input are compatible and the assignment
 	 *         has been made.
 	 */
-	bool addInput(const std::string& name, InputBase& input);
+	bool addInput(const std::string& name, const InputBase& input);
 
 	/**
 	 * Clear all the assignments of a multi-input.
