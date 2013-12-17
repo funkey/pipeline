@@ -152,6 +152,14 @@ private:
 public:
 
 	/**
+	 * Create a pipeline value using the default constructor.
+	 */
+	Value() {
+
+		parent_type::set(boost::make_shared<T>());
+	}
+
+	/**
 	 * Copy constructor. Creates a pipeline value that points to the same data 
 	 * as the other value.
 	 *
