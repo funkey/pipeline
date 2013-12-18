@@ -222,6 +222,7 @@ public:
 	Value<T>& operator=(Value<S>& other) {
 
 		getUpdateProcessNode()->setInput(other.getUpdateProcessNode()->getInput());
+		return *this;
 	}
 
 	/**
@@ -232,6 +233,7 @@ public:
 	Value<T>& operator=(pipeline::OutputBase& output) {
 
 		getUpdateProcessNode()->setInput(output);
+		return *this;
 	}
 
 	/**
@@ -242,6 +244,7 @@ public:
 	Value<T>& operator=(const T& data) {
 
 		set(boost::make_shared<T>(data));
+		return *this;
 	}
 
 	/**
