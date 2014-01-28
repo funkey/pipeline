@@ -129,7 +129,7 @@ public:
 	}
 
 	// transparent -> operator
-	T* operator->() const {
+	T* operator->() {
 
 		return &(ValueImpl<Wrap<T> >::get()->get());
 	}
