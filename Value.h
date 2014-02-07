@@ -170,7 +170,7 @@ public:
 	template <typename S>
 	Value(Value<S>& other) {
 
-		getUpdateProcessNode()->setInput(other.getUpdateProcessNode()->getInput());
+		getUpdateProcessNode()->setInput((InputBase&)other);
 	}
 
 	/**
@@ -221,7 +221,7 @@ public:
 	template <typename S>
 	Value<T>& operator=(Value<S>& other) {
 
-		getUpdateProcessNode()->setInput(other.getUpdateProcessNode()->getInput());
+		getUpdateProcessNode()->setInput((InputBase&)other);
 		return *this;
 	}
 
