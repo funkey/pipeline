@@ -38,7 +38,7 @@ public:
 	 *     registerInput(_input);
 	 *
 	 *     // register the backward signal slot
-	 *     _input.registerBackwardSlot(_update);
+	 *     _input.registerSlot(_update);
 	 *   }
 	 *
 	 *   void start() {
@@ -56,12 +56,12 @@ public:
 	 *
 	 * @param slot The signal slot to register.
 	 */
-	void registerBackwardSlot(signals::SlotBase& slot);
+	void registerSlot(signals::SlotBase& slot);
 
 	/**
 	 * Register a ProcessNode method as a backward callback on an input. This is
-	 * a convenience wrapper that creates a ProcessNodeCallback object of the
-	 * appropriate signal type and adds it to the input's backward receiver.
+	 * a convenience wrapper that creates a WeakProcessNodeCallback object of 
+	 * the appropriate signal type and adds it to the input's backward receiver.
 	 *
 	 * Example usage:
 	 * <code>
@@ -75,7 +75,7 @@ public:
 	 *
 	 *     registerInput(_input);
 	 *
-	 *     _input.registerBackwardCallback(&ModificationLogger::onModified, this);
+	 *     _input.registerCallback(&ModificationLogger::onModified, this);
 	 *   }
 	 *
 	 * private:
@@ -92,11 +92,11 @@ public:
 	 *                    should be called.
 	 */
 	template <class T, typename SignalType>
-	void registerBackwardCallback(void (T::*callback)(SignalType&), T* processNode, signals::CallbackInvocation invocation = signals::Exclusive) {
+	void registerCallback(void (T::*callback)(SignalType&), T* processNode, signals::CallbackInvocation invocation = signals::Exclusive) {
 
-		boost::shared_ptr<ProcessNodeCallback<SignalType> > processNodeCallback = boost::make_shared<ProcessNodeCallback<SignalType> >(processNode, boost::bind(callback, static_cast<T*>(processNode), _1), invocation);
+		boost::shared_ptr<WeakProcessNodeCallback<SignalType> > processNodeCallback = boost::make_shared<WeakProcessNodeCallback<SignalType> >(processNode, boost::bind(callback, processNode, _1), invocation);
 
-		registerBackwardCallback(*processNodeCallback);
+		registerCallback(*processNodeCallback);
 
 		_callbacks.push_back(processNodeCallback);
 	}
@@ -110,11 +110,11 @@ public:
 	 * @param processNode A ProcessNode to track.
 	 */
 	template <typename SignalType>
-	void registerBackwardCallback(boost::function<void(SignalType&)> callback, ProcessNode* processNode, signals::CallbackInvocation invocation = signals::Exclusive) {
+	void registerCallback(boost::function<void(SignalType&)> callback, ProcessNode* processNode, signals::CallbackInvocation invocation = signals::Exclusive) {
 
-		boost::shared_ptr<ProcessNodeCallback<SignalType> > processNodeCallback = boost::make_shared<ProcessNodeCallback<SignalType> >(processNode, callback, invocation);
+		boost::shared_ptr<WeakProcessNodeCallback<SignalType> > processNodeCallback = boost::make_shared<WeakProcessNodeCallback<SignalType> >(processNode, callback, invocation);
 
-		registerBackwardCallback(*processNodeCallback);
+		registerCallback(*processNodeCallback);
 
 		_callbacks.push_back(processNodeCallback);
 	}
@@ -124,7 +124,7 @@ public:
 	 *
 	 * @param A Callback object.
 	 */
-	void registerBackwardCallback(signals::CallbackBase& callback);
+	void registerCallback(signals::CallbackBase& callback);
 
 	/**
 	 * Returns true, if this input was assigned an output (it can still have a
@@ -166,9 +166,9 @@ public:
 	 */
 	virtual operator bool() const = 0;
 
-	signals::Sender& getBackwardSender();
+	signals::Sender& getSender();
 
-	signals::Receiver& getBackwardReceiver();
+	signals::Receiver& getReceiver();
 
 protected:
 
@@ -179,8 +179,8 @@ protected:
 private:
 
 	// inputs only send and receive backwards
-	signals::Sender   _backwardSender;
-	signals::Receiver _backwardReceiver;
+	signals::Sender   _sender;
+	signals::Receiver _receiver;
 
 	// list of registered process node callbacks created by input
 	// (exclusive ownership)
@@ -205,17 +205,17 @@ public:
 		_internalSender.registerSlot(*_inputSetToSharedPointer);
 		_internalSender.registerSlot(*_inputUnset);
 
-		getBackwardReceiver().registerCallback(*_outputPointerSetCallback);
+		getReceiver().registerCallback(*_outputPointerSetCallback);
 	}
 
 	bool accept(OutputBase& output) {
 
 		// establish input-output signalling connections
-		output.getForwardSender().connect(getBackwardReceiver());
-		getBackwardSender().connect(output.getForwardReceiver());
+		output.getSender().connect(getReceiver());
+		getSender().connect(output.getReceiver());
 
 		// establish the internal signalling connections
-		_internalSender.connect(getBackwardReceiver());
+		_internalSender.connect(getReceiver());
 
 		// remember what output we are using
 		setAssignedOutput(output);
@@ -230,7 +230,7 @@ public:
 	bool accept(boost::shared_ptr<Data> data) {
 
 		// establish the internal signalling connections
-		_internalSender.connect(getBackwardReceiver());
+		_internalSender.connect(getReceiver());
 
 		// remember that we are not bound to an output
 		unsetAssignedOutput();
@@ -251,8 +251,8 @@ public:
 		if (hasAssignedOutput()) {
 
 			// tear-down input-output signalling connections
-			getAssignedOutput().getForwardSender().disconnect(getBackwardReceiver());
-			getBackwardSender().disconnect(getAssignedOutput().getForwardReceiver());
+			getAssignedOutput().getSender().disconnect(getReceiver());
+			getSender().disconnect(getAssignedOutput().getReceiver());
 
 			// we are not assigned to any output any more
 			unsetAssignedOutput();

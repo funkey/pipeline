@@ -8,15 +8,15 @@ InputBase::InputBase() :
 	_assignedOutput(0) {}
 
 void
-InputBase::registerBackwardSlot(signals::SlotBase& slot) {
+InputBase::registerSlot(signals::SlotBase& slot) {
 
-	_backwardSender.registerSlot(slot);
+	_sender.registerSlot(slot);
 }
 
 void
-InputBase::registerBackwardCallback(signals::CallbackBase& callback) {
+InputBase::registerCallback(signals::CallbackBase& callback) {
 
-	_backwardReceiver.registerCallback(callback);
+	_receiver.registerCallback(callback);
 }
 
 bool
@@ -44,15 +44,15 @@ InputBase::unsetAssignedOutput() {
 }
 
 signals::Sender&
-InputBase::getBackwardSender() {
+InputBase::getSender() {
 
-	return _backwardSender;
+	return _sender;
 }
 
 signals::Receiver&
-InputBase::getBackwardReceiver() {
+InputBase::getReceiver() {
 
-	return _backwardReceiver;
+	return _receiver;
 }
 
 } // namespace pipeline

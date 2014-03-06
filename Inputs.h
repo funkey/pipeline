@@ -46,7 +46,7 @@ public:
 	 *     registerInputs(_inputs);
 	 *
 	 *     // register the backward signal slots
-	 *     _input.registerBackwardSlots(_update);
+	 *     _input.registerSlots(_update);
 	 *   }
 	 *
 	 *   void sendUpdateSignals() {
@@ -60,7 +60,7 @@ public:
 	 *
 	 * @param slot The signal slot to register.
 	 */
-	void registerBackwardSlots(signals::SlotsBase& slots);
+	void registerSlots(signals::SlotsBase& slots);
 
 	/**
 	 * Register a ProcessNode method as a backward callback on a multi-input.
@@ -81,7 +81,7 @@ public:
 	 *
 	 *     registerInputs(_inputs);
 	 *
-	 *     _inputs.registerBackwardCallbacks(&Inputs::onModified, this);
+	 *     _inputs.registerCallbacks(&Inputs::onModified, this);
 	 *   }
 	 *
 	 * private:
@@ -98,7 +98,7 @@ public:
 	 *                    should be called.
 	 */
 	template <class T, typename SignalType>
-	void registerBackwardCallbacks(void (T::*callback)(SignalType&, unsigned int), T* processNode, signals::CallbackInvocation invocation = signals::Exclusive) {
+	void registerCallbacks(void (T::*callback)(SignalType&, unsigned int), T* processNode, signals::CallbackInvocation invocation = signals::Exclusive) {
 
 		boost::function<void(SignalType&, unsigned int)> multiCallback = boost::bind(callback, static_cast<T*>(processNode), _1, _2);
 
@@ -114,7 +114,7 @@ public:
 	 * @param processNode A ProcessNode to track.
 	 */
 	template <typename SignalType>
-	void registerBackwardCallbacks(boost::function<void(SignalType&, unsigned int)> callback, ProcessNode* processNode, signals::CallbackInvocation invocation = signals::Exclusive) {
+	void registerCallbacks(boost::function<void(SignalType&, unsigned int)> callback, ProcessNode* processNode, signals::CallbackInvocation invocation = signals::Exclusive) {
 
 		_multiCallbacks.push_back(std::make_pair(new Callbacks<SignalType>(callback, invocation), processNode));
 	}
@@ -125,7 +125,7 @@ public:
 	 * @param callback A boost function object.
 	 */
 	template <typename SignalType>
-	void registerBackwardCallbacks(boost::function<void(SignalType&, unsigned int)> callback, signals::CallbackInvocation invocation = signals::Exclusive) {
+	void registerCallbacks(boost::function<void(SignalType&, unsigned int)> callback, signals::CallbackInvocation invocation = signals::Exclusive) {
 
 		_multiCallbacks.push_back(std::make_pair(new Callbacks<SignalType>(callback, invocation), static_cast<ProcessNode*>(0)));
 	}
@@ -343,7 +343,7 @@ private:
 
 				unsigned int s = slots->addSlot();
 
-				newInput.registerBackwardSlot((*slots)[s]);
+				newInput.registerSlot((*slots)[s]);
 
 				LOG_ALL(pipelinelog) << "[" << typeName(this) << "] " << typeName((*slots)[s]) << std::endl;
 			}
@@ -367,7 +367,7 @@ private:
 			if (!_internalConnected) {
 
 				// establish the internal signalling connections
-				_internalSender.connect(getBackwardReceiver());
+				_internalSender.connect(getReceiver());
 
 				_internalConnected = true;
 			}
@@ -387,12 +387,12 @@ private:
 	void establishingSignalling(OutputBase& output, Input<DataType>& newInput) {
 
 		// establish input-output signalling connections to Slots
-		output.getForwardSender().connect(newInput.getBackwardReceiver());
-		newInput.getBackwardSender().connect(output.getForwardReceiver());
+		output.getSender().connect(newInput.getReceiver());
+		newInput.getSender().connect(output.getReceiver());
 
 		// establish input-output signalling connections to Slot
-		output.getForwardSender().connect(getBackwardReceiver());
-		getBackwardSender().connect(output.getForwardReceiver());
+		output.getSender().connect(getReceiver());
+		getSender().connect(output.getReceiver());
 
 		LOG_ALL(pipelinelog) << "[" << typeName(this) << "] sending InputAdded" << std::endl;
 

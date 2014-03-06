@@ -32,7 +32,7 @@ public:
 	OutputBase() :
 		_pointerSet(new signals::Slot<OutputPointerSet>()) {
 
-		_forwardSender.registerSlot(*_pointerSet);
+		_sender.registerSlot(*_pointerSet);
 	}
 
 	virtual ~OutputBase();
@@ -54,7 +54,7 @@ public:
 	 *     registerOutput(_time);
 	 *
 	 *     // register the forward signal slot
-	 *     _time.registerForwardSlot(_modified);
+	 *     _time.registerSlot(_modified);
 	 *
 	 *     (*_time) = 0;
 	 *   }
@@ -76,12 +76,12 @@ public:
 	 *
 	 * @param slot The signal slot to register.
 	 */
-	void registerForwardSlot(signals::SlotBase& slot);
+	void registerSlot(signals::SlotBase& slot);
 
 	/**
 	 * Register a ProcessNode method as a forward callback on an output. This is
-	 * a convenience wrapper that creates a ProcessNodeCallback object of the
-	 * appropriate signal type and adds it to the output's forward receiver.
+	 * a convenience wrapper that creates a SharedProcessNodeCallback object of 
+	 * the appropriate signal type and adds it to the output's forward receiver.
 	 *
 	 * Example usage:
 	 * <code>
@@ -95,7 +95,7 @@ public:
 	 *
 	 *     registerOutput(_output);
 	 *
-	 *     _output.registerForwardCallback(&UpdateLogger::onUpdate, this);
+	 *     _output.registerCallback(&UpdateLogger::onUpdate, this);
 	 *   }
 	 *
 	 * private:
@@ -112,11 +112,11 @@ public:
 	 *                    should be called.
 	 */
 	template <class T, typename SignalType>
-	void registerForwardCallback(void (T::*callback)(SignalType&), T* processNode, signals::CallbackInvocation invocation = signals::Exclusive) {
+	void registerCallback(void (T::*callback)(SignalType&), T* processNode, signals::CallbackInvocation invocation = signals::Exclusive) {
 
 		SharedProcessNodeCallback<SignalType>* processNodeCallback = new SharedProcessNodeCallback<SignalType>(processNode, boost::bind(callback, processNode, _1), invocation);
 
-		registerForwardCallback(*processNodeCallback);
+		registerCallback(*processNodeCallback);
 
 		_callbacks.push_back(processNodeCallback);
 	}
@@ -130,11 +130,11 @@ public:
 	 * @param processNode A ProcessNode to track.
 	 */
 	template <typename SignalType>
-	void registerForwardCallback(boost::function<void(SignalType&)> callback, ProcessNode* processNode, signals::CallbackInvocation invocation = signals::Exclusive) {
+	void registerCallback(boost::function<void(SignalType&)> callback, ProcessNode* processNode, signals::CallbackInvocation invocation = signals::Exclusive) {
 
 		SharedProcessNodeCallback<SignalType>* processNodeCallback = new SharedProcessNodeCallback<SignalType>(processNode, callback, invocation);
 
-		registerForwardCallback(*processNodeCallback);
+		registerCallback(*processNodeCallback);
 
 		_callbacks.push_back(processNodeCallback);
 	}
@@ -144,7 +144,7 @@ public:
 	 *
 	 * @param A Callback object.
 	 */
-	void registerForwardCallback(signals::CallbackBase& callback);
+	void registerCallback(signals::CallbackBase& callback);
 
 	/**
 	 * Add a process node as a dependency of this output.
@@ -156,9 +156,9 @@ public:
 	 */
 	std::vector<boost::shared_ptr<ProcessNode> > getDependencies() const;
 
-	signals::Sender& getForwardSender();
+	signals::Sender& getSender();
 
-	signals::Receiver& getForwardReceiver();
+	signals::Receiver& getReceiver();
 
 	/**
 	 * Get a shared pointer to the Data instance held by this output.
@@ -175,8 +175,8 @@ protected:
 
 private:
 
-	signals::Sender   _forwardSender;
-	signals::Receiver _forwardReceiver;
+	signals::Sender   _sender;
+	signals::Receiver _receiver;
 
 	// (weak-like) pointers to the ProcessNode this output depends on
 	std::vector<ProcessNode*> _dependencies;

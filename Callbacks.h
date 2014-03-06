@@ -37,13 +37,13 @@ public:
 	void registerAtInput(InputBase& input, unsigned int numInput) {
 
 		signals::Callback<SignalType> callback(boost::bind(_multiCallback, _1, numInput), _invocation);
-		input.registerBackwardCallback(callback);
+		input.registerCallback(callback);
 	}
 
 	void registerAtInput(InputBase& input, unsigned int numInput, ProcessNode* processNode) {
 
 		boost::function<void(SignalType&)> callback = boost::bind(_multiCallback, _1, numInput);
-		input.registerBackwardCallback(callback, processNode, _invocation);
+		input.registerCallback(callback, processNode, _invocation);
 	}
 
 private:

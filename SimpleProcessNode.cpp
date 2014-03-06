@@ -57,7 +57,7 @@ SimpleProcessNode<LockingStrategy>::registerInput(InputBase& input, std::string 
 	boost::function<void(Modified&)> funOnModified = boost::bind(&SimpleProcessNode<LockingStrategy>::onInputModified, this, _1, numInput);
 
 	// register the callbacks and setup process node tracking
-	input.registerBackwardCallback(funOnModified, this, signals::Transparent);
+	input.registerCallback(funOnModified, this, signals::Transparent);
 
 	if (inputType == Optional) {
 
@@ -70,7 +70,7 @@ SimpleProcessNode<LockingStrategy>::registerInput(InputBase& input, std::string 
 
 		// However, if an optional input is set, it has to be marked dirty,
 		boost::function<void(InputSetBase&)> funOnInputSet = boost::bind(&SimpleProcessNode<LockingStrategy>::onInputSet, this, _1, numInput);
-		input.registerBackwardCallback(funOnInputSet, this, signals::Transparent);
+		input.registerCallback(funOnInputSet, this, signals::Transparent);
 
 	} else {
 
@@ -82,10 +82,10 @@ SimpleProcessNode<LockingStrategy>::registerInput(InputBase& input, std::string 
 	// Regardless of the type of input -- if it was set to a shared pointer it 
 	// has to be set dirty and Modified has to be sent.
 	boost::function<void(InputSetToSharedPointerBase&)> funOnInputSetToSharedPointer = boost::bind(&SimpleProcessNode<LockingStrategy>::onInputSetToSharedPointer, this, _1, numInput);
-	input.registerBackwardCallback(funOnInputSetToSharedPointer, this, signals::Transparent);
+	input.registerCallback(funOnInputSetToSharedPointer, this, signals::Transparent);
 
 	// register the appropriate update signal for this input
-	input.registerBackwardSlot(_inputUpdate[numInput]);
+	input.registerSlot(_inputUpdate[numInput]);
 
 	_inputNums[&input] = numInput;
 
@@ -114,12 +114,12 @@ SimpleProcessNode<LockingStrategy>::registerInputs(MultiInput& input, std::strin
 	boost::function<void(Modified&, unsigned int)> funOnModified      = boost::bind(&SimpleProcessNode<LockingStrategy>::onMultiInputModified, this, _1, _2, numMultiInput);
 
 	// register the callbacks and setup process node tracking
-	input.registerBackwardCallback(funOnInputAdded, this, signals::Transparent);
-	input.registerBackwardCallback(funOnInputsCleared, this, signals::Transparent);
-	input.registerBackwardCallbacks(funOnModified, this, signals::Transparent);
+	input.registerCallback(funOnInputAdded, this, signals::Transparent);
+	input.registerCallback(funOnInputsCleared, this, signals::Transparent);
+	input.registerCallbacks(funOnModified, this, signals::Transparent);
 
 	// register the appropriate update signal for this input
-	input.registerBackwardSlots(*_multiInputUpdates[numMultiInput]);
+	input.registerSlots(*_multiInputUpdates[numMultiInput]);
 
 	_multiInputNums[&input] = numMultiInput;
 
@@ -145,10 +145,10 @@ SimpleProcessNode<LockingStrategy>::registerOutput(OutputBase& output, std::stri
 	// create a signal callbacks that stores the number of the output with it
 	boost::function<void(Update&)> funOnUpdate = boost::bind(&SimpleProcessNode<LockingStrategy>::onUpdate, this, _1, numOutput);
 
-	output.registerForwardCallback(funOnUpdate, this, signals::Transparent);
+	output.registerCallback(funOnUpdate, this, signals::Transparent);
 
 	// register the appropriate update signal for this output
-	output.registerForwardSlot(_modified[numOutput]);
+	output.registerSlot(_modified[numOutput]);
 
 	// store the output number in a look-up table
 	_outputNums[&output] = numOutput;

@@ -70,10 +70,10 @@ protected:
 
 		// establish callback connection to method of this class for signal 
 		// receiving
-		output.registerForwardCallback(boost::function<void(SignalType&)>(boost::bind(&MyType::onSignal, this, _1)), processNode, signals::Transparent);
+		output.registerCallback(boost::function<void(SignalType&)>(boost::bind(&MyType::onSignal, this, _1)), processNode, signals::Transparent);
 
 		// connect slot of this class for signal sending
-		input.registerBackwardSlot(_slot);
+		input.registerSlot(_slot);
 
 		// delegate to other signals filters
 		ParentType::filterBackward(output, input, processNode);
@@ -82,10 +82,10 @@ protected:
 	void filterBackward(pipeline::OutputBase& output, pipeline::MultiInput& inputs, pipeline::ProcessNode* processNode) {
 
 		// establish callback connection to method of this class
-		output.registerForwardCallback(boost::function<void(SignalType&)>(boost::bind(&MyType::onSignalMulti, this, _1)), processNode, signals::Transparent);
+		output.registerCallback(boost::function<void(SignalType&)>(boost::bind(&MyType::onSignalMulti, this, _1)), processNode, signals::Transparent);
 
 		// connect slot of this class for signal sending
-		inputs.registerBackwardSlots(_slots);
+		inputs.registerSlots(_slots);
 
 		// delegate to other signals filters
 		ParentType::filterBackward(output, inputs, processNode);

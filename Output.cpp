@@ -13,27 +13,27 @@ OutputBase::~OutputBase() {
 }
 
 void
-OutputBase::registerForwardSlot(signals::SlotBase& slot) {
+OutputBase::registerSlot(signals::SlotBase& slot) {
 
-	_forwardSender.registerSlot(slot);
+	_sender.registerSlot(slot);
 }
 
 void
-OutputBase::registerForwardCallback(signals::CallbackBase& callback) {
+OutputBase::registerCallback(signals::CallbackBase& callback) {
 
-	_forwardReceiver.registerCallback(callback);
+	_receiver.registerCallback(callback);
 }
 
 signals::Sender&
-OutputBase::getForwardSender() {
+OutputBase::getSender() {
 
-	return _forwardSender;
+	return _sender;
 }
 
 signals::Receiver&
-OutputBase::getForwardReceiver() {
+OutputBase::getReceiver() {
 
-	return _forwardReceiver;
+	return _receiver;
 }
 
 void
