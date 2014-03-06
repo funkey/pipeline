@@ -220,7 +220,7 @@ public:
 	 *
 	 * @return A shared pointer to this process node.
 	 */
-	boost::shared_ptr<ProcessNode> getSharedPtr();
+	boost::shared_ptr<ProcessNode> getSelfSharedPointer();
 
 	/**
 	 * Get the first input of this process node. A call to this method is

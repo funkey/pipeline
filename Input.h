@@ -4,6 +4,7 @@
 #include <boost/type_traits.hpp>
 
 #include <signals/Callback.h>
+#include <util/deprecated.h>
 #include "exceptions.h"
 #include "Data.h"
 #include "Output.h"
@@ -143,7 +144,7 @@ public:
 	 *
 	 * @return The currently assigned shared pointer.
 	 */
-	virtual boost::shared_ptr<Data> getAssignedSharedPtr() const = 0;
+	virtual boost::shared_ptr<Data> getSharedDataPointer() const = 0;
 
 	/**
 	 * Try to accept an output.
@@ -197,94 +198,55 @@ public:
 	InputImpl() :
 		_inputSet(boost::make_shared<signals::Slot<const InputSet<DataType> > >()),
 		_inputSetToSharedPointer(boost::make_shared<signals::Slot<const InputSetToSharedPointer<DataType> > >()),
-		_inputUnset(boost::make_shared<signals::Slot<const InputUnset<DataType> > >()) {
+		_inputUnset(boost::make_shared<signals::Slot<const InputUnset<DataType> > >()),
+		_outputPointerSetCallback(new signals::Callback<OutputPointerSet>(boost::bind(&InputImpl<DataType>::onOutputPointerSet, this, _1))) {
 
 		_internalSender.registerSlot(*_inputSet);
 		_internalSender.registerSlot(*_inputSetToSharedPointer);
 		_internalSender.registerSlot(*_inputUnset);
+
+		getBackwardReceiver().registerCallback(*_outputPointerSetCallback);
 	}
 
 	bool accept(OutputBase& output) {
 
-		if (!output.getData())
-			output.createData();
+		// establish input-output signalling connections
+		output.getForwardSender().connect(getBackwardReceiver());
+		getBackwardSender().connect(output.getForwardReceiver());
 
-		boost::shared_ptr<DataType> data = boost::dynamic_pointer_cast<DataType>(output.getData());
+		// establish the internal signalling connections
+		_internalSender.connect(getBackwardReceiver());
 
-		if (data) {
+		// remember what output we are using
+		setAssignedOutput(output);
 
-			// share ownership to make sure the input data keeps alive
-			_data = data;
+		// if there is already data on the output
+		if (output.getSharedDataPointer())
+			setDataFromOutput(output.getSharedDataPointer());
 
-			// keep the process node of this output alive
-			_creator = output.getProcessNode();
-
-			// establish the internal signalling connections
-			_internalSender.connect(getBackwardReceiver());
-
-			// establish input-output signalling connections
-			output.getForwardSender().connect(getBackwardReceiver());
-			getBackwardSender().connect(output.getForwardReceiver());
-
-			// remember what output we are using
-			setAssignedOutput(output);
-
-			// inform about new input
-			(*_inputSet)(InputSet<DataType>(data));
-
-			return true;
-		}
-
-		std::stringstream error;
-		error << "output of type " << typeName(output) << " can not be assigned to input of type " << typeName(*this) << std::endl;
-
-		BOOST_THROW_EXCEPTION(AssignmentError() << error_message(error.str()) << STACK_TRACE);
-
-		return false;
+		return true;
 	}
 
 	bool accept(boost::shared_ptr<Data> data) {
 
-		boost::shared_ptr<DataType> casted_data = boost::dynamic_pointer_cast<DataType>(data);
+		// establish the internal signalling connections
+		_internalSender.connect(getBackwardReceiver());
 
-		if (casted_data) {
+		// remember that we are not bound to an output
+		unsetAssignedOutput();
 
-			// share ownership to make sure the input data keeps alive
-			_data = casted_data;
+		setDataFromPointer(data);
 
-			// we are not aware of any creator
-			_creator.reset();
-
-			// establish the internal signalling connections
-			_internalSender.connect(getBackwardReceiver());
-
-			// remember that we are not bound to an output
-			unsetAssignedOutput();
-
-			// inform about new input
-			(*_inputSetToSharedPointer)(InputSetToSharedPointer<DataType>(casted_data));
-
-			return true;
-		}
-
-		std::stringstream error;
-		error << "pointer of type " << typeName(*data) << " can not be assigned to input of type " << typeName(*this) << std::endl;
-
-		BOOST_THROW_EXCEPTION(AssignmentError() << error_message(error.str()) << STACK_TRACE);
-
-		return false;
+		return true;
 	}
 
 	void unset() {
 
-		// get a shared pointer to the data for the  signal
+		// get a shared pointer to the data for the signal
 		boost::shared_ptr<DataType> oldData = _data;
 
 		// reset shared pointer to data
 		_data.reset();
-
-		// release creator
-		_creator.reset();
 
 		if (hasAssignedOutput()) {
 
@@ -296,50 +258,114 @@ public:
 			unsetAssignedOutput();
 		}
 
-		// inform about ance
+		// inform about unset of input
 		(*_inputUnset)(InputUnset<DataType>(oldData));
 	}
 
-	boost::shared_ptr<Data> getAssignedSharedPtr() const {
-
-		return _data;
-	}
-
-	boost::shared_ptr<DataType> get() const {
-
-		return _data;
-	}
-
-	DataType* operator->() const {
-
-		return _data.operator->();
-	}
-
-	DataType& operator*() const {
-
-		return *_data;
-	}
-
-	operator boost::shared_ptr<DataType>() const {
+	/**
+	 * Get a shared pointer to the Data object assigned to this input.
+	 */
+	boost::shared_ptr<Data> getSharedDataPointer() const {
 
 		return _data;
 	}
 
 	/**
-	 * Return true if this input is assigned.
+	 * Get a shared pointer to the concrete DataType object assigned to this 
+	 * input.
 	 */
-	operator bool() const {
+	boost::shared_ptr<DataType> getSharedPointer() const {
+
+		return _data;
+	}
+
+	/**
+	 * Get the data assigned to this input.
+	 */
+	DataType* get() const {
+
+		return _data.get();
+	}
+
+	/**
+	 * Member access to the data assigned to this input.
+	 */
+	DataType* operator->() const {
+
+		return _data.operator->();
+	}
+
+	/**
+	 * Dereferencation of the data assigned to this input.
+	 */
+	DataType& operator*() const {
+
+		return *_data;
+	}
+
+	/**
+	 * Return true if this input points to data.
+	 */
+	DEPRECATED(operator bool() const) {
+
+		return _data;
+	}
+
+	/**
+	 * For convencience, implicit conversion to shared pointer to DataType.
+	 */
+	operator boost::shared_ptr<DataType>() const {
 
 		return _data;
 	}
 
 private:
 
+	void setDataFromOutput(boost::shared_ptr<Data> data) {
+
+		boost::shared_ptr<DataType> castedData = boost::dynamic_pointer_cast<DataType>(data);
+
+		if (!castedData) {
+
+			std::stringstream error;
+			error << "output of type " << typeName(*data) << " can not be assigned to input of type " << typeName(*this) << std::endl;
+
+			BOOST_THROW_EXCEPTION(AssignmentError() << error_message(error.str()) << STACK_TRACE);
+		}
+
+		// share ownership to make sure the input data keeps alive
+		_data = castedData;
+
+		// inform about new input
+		(*_inputSet)(InputSet<DataType>(castedData));
+	}
+
+	void setDataFromPointer(boost::shared_ptr<Data> data) {
+
+		boost::shared_ptr<DataType> castedData = boost::dynamic_pointer_cast<DataType>(data);
+
+		if (!castedData) {
+
+			std::stringstream error;
+			error << "pointer of type " << typeName(*data) << " can not be assigned to input of type " << typeName(*this) << std::endl;
+
+			BOOST_THROW_EXCEPTION(AssignmentError() << error_message(error.str()) << STACK_TRACE);
+		}
+
+		// share ownership to make sure the input data keeps alive
+		_data = castedData;
+
+		// inform about new input
+		(*_inputSetToSharedPointer)(InputSetToSharedPointer<DataType>(castedData));
+	}
+
+	void onOutputPointerSet(const OutputPointerSet&) {
+
+		setDataFromOutput(getAssignedOutput().getSharedDataPointer());
+	}
+
 	// inputs share ownership of input data
 	boost::shared_ptr<DataType> _data;
-
-	// inputs share ownership of process nodes that created the output
-	boost::shared_ptr<ProcessNode> _creator;
 
 	// slot to send a signal when the input was set
 	boost::shared_ptr<signals::Slot<const InputSet<DataType> > > _inputSet;
@@ -347,11 +373,14 @@ private:
 	// slot to send a signal when the input was set to a shared pointer
 	boost::shared_ptr<signals::Slot<const InputSetToSharedPointer<DataType> > > _inputSetToSharedPointer;
 
-	// slot to send a signal when the input was ed
+	// slot to send a signal when the input was unset
 	boost::shared_ptr<signals::Slot<const InputUnset<DataType> > > _inputUnset;
 
-	// internally used sender to inform about a new input
+	// internally used sender for the slots defined above
 	signals::Sender _internalSender;
+
+	// callback for OutputPointerSet signals
+	boost::shared_ptr<signals::Callback<OutputPointerSet> > _outputPointerSetCallback;
 };
 
 template <bool, typename T>
@@ -363,23 +392,32 @@ class InputTypeDispatch<true, T> : public InputImpl<T> {};
 template <typename T>
 class InputTypeDispatch<false, T> : public InputImpl<Wrap<T> > {
 
+	typedef InputImpl<Wrap<T> > parent_type;
+
 public:
 
-	// transparent unwrapper
-	T& operator*() {
+	/**
+	 * Get the data assigned to this input.
+	 */
+	T* get() const {
 
-		return InputImpl<Wrap<T> >::get()->get();
+		return parent_type::getSharedPointer()->getSharedPointer().get();
 	}
 
-	// transparent -> operator
+	/**
+	 * Member access to the data assigned to this input.
+	 */
 	T* operator->() const {
 
-		return &(InputImpl<Wrap<T> >::get()->get());
+		return parent_type::getSharedPointer()->getSharedPointer().operator->();
 	}
 
-	operator boost::shared_ptr<T>() const {
+	/**
+	 * Dereferencation of the data assigned to this input.
+	 */
+	T& operator*() const {
 
-		return InputImpl<Wrap<T> >::get()->get_shared();
+		return *parent_type::getSharedPointer()->get();
 	}
 };
 

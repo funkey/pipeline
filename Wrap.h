@@ -7,27 +7,27 @@
 
 namespace pipeline {
 
+/**
+ * Wraps an arbitrary type, such that the result is derived from Data.
+ */
 template <typename T>
 class Wrap : public Data {
 
 public:
 
-	Wrap(boost::shared_ptr<T> value = boost::make_shared<T>()) :
+	Wrap() {};
+
+	Wrap(boost::shared_ptr<T> value) :
 		_value(value) {}
 
-	T& get() {
+	T* get() {
 
-		return *_value;
+		return _value.get();
 	}
 
-	boost::shared_ptr<T> get_shared() {
+	boost::shared_ptr<T> getSharedPointer() {
 
 		return _value;
-	}
-
-	operator T&() {
-
-		return *_value;
 	}
 
 private:

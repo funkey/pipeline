@@ -3,8 +3,14 @@
 
 namespace pipeline {
 
-OutputBase::OutputBase() :
-	_processNode(0) {}
+OutputBase::~OutputBase() {
+
+	// destruct all process node callbacks, that have been registered for
+	// this output
+	for (std::vector<signals::CallbackBase*>::iterator i = _callbacks.begin();
+		 i != _callbacks.end(); i++)
+		delete *i;
+}
 
 void
 OutputBase::registerForwardSlot(signals::SlotBase& slot) {
@@ -31,17 +37,26 @@ OutputBase::getForwardReceiver() {
 }
 
 void
-OutputBase::setProcessNode(ProcessNode* processNode) {
+OutputBase::addDependency(ProcessNode* processNode) {
 
-	// don't reassign if this output already belongs to a process node
-	if (_processNode == 0)
-		_processNode = processNode;
+	_dependencies.push_back(processNode);
 }
 
-boost::shared_ptr<ProcessNode>
-OutputBase::getProcessNode() const {
+std::vector<boost::shared_ptr<ProcessNode> >
+OutputBase::getDependencies() const {
 
-	return _processNode->getSharedPtr();
+	std::vector<boost::shared_ptr<ProcessNode> > dependencies;
+
+	foreach (ProcessNode* processNode, _dependencies)
+		dependencies.push_back(processNode->getSelfSharedPointer());
+
+	return dependencies;
+}
+
+void
+OutputBase::notifyPointerSet() {
+
+	(*_pointerSet)();
 }
 
 } // namespace pipeline

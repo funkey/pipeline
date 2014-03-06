@@ -6,12 +6,14 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
 
+#include <util/exceptions.h>
 #include <signals/Sender.h>
 #include <signals/Receiver.h>
 #include <signals/Slot.h>
 #include <signals/Callback.h>
 #include "Data.h"
 #include "Logging.h"
+#include "OutputSignals.h"
 #include "ProcessNodeCallback.h"
 #include "Wrap.h"
 
@@ -27,16 +29,13 @@ public:
 	/**
 	 * Create a new OutputBase.
 	 */
-	OutputBase();
+	OutputBase() :
+		_pointerSet(new signals::Slot<OutputPointerSet>()) {
 
-	virtual ~OutputBase() {
-
-		// destruct all process node callbacks, that have been registered for
-		// this output
-		for (std::vector<signals::CallbackBase*>::iterator i = _callbacks.begin();
-		     i != _callbacks.end(); i++)
-			delete *i;
+		_forwardSender.registerSlot(*_pointerSet);
 	}
+
+	virtual ~OutputBase();
 
 	/**
 	 * Register a slot for forward signals with this output.
@@ -148,42 +147,46 @@ public:
 	void registerForwardCallback(signals::CallbackBase& callback);
 
 	/**
-	 * Set the ProcessNode this output belongs to. This is called by the
-	 * ProcessNode when the output is registered via
-	 * ProcessNode::registerOutput().
-	 *
-	 * @param processNode The ProcessNode this output belongs to.
+	 * Add a process node as a dependency of this output.
 	 */
-	void setProcessNode(ProcessNode* processNode);
+	void addDependency(ProcessNode* processNode);
 
 	/**
-	 * Get a shared pointer to the ProcessNode this output belongs to.
-	 *
-	 * @return A shared pointer to the ProcessNode this output belongs to.
+	 * Get shared pointers to the process nodes this output depends on.
 	 */
-	boost::shared_ptr<ProcessNode> getProcessNode() const;
+	std::vector<boost::shared_ptr<ProcessNode> > getDependencies() const;
 
 	signals::Sender& getForwardSender();
 
 	signals::Receiver& getForwardReceiver();
 
-	virtual void createData() = 0;
+	/**
+	 * Get a shared pointer to the Data instance held by this output.
+	 */
+	virtual boost::shared_ptr<Data> getSharedDataPointer() const = 0;
 
-	virtual boost::shared_ptr<Data> getData() const = 0;
+protected:
 
-	virtual operator bool() = 0;
+	/**
+	 * Send a signal to the connected inputs to inform them about a data pointer 
+	 * change.
+	 */
+	void notifyPointerSet();
 
 private:
 
 	signals::Sender   _forwardSender;
 	signals::Receiver _forwardReceiver;
 
-	// (weak-like) pointer to the ProcessNode this output belongs to
-	ProcessNode* _processNode;
+	// (weak-like) pointers to the ProcessNode this output depends on
+	std::vector<ProcessNode*> _dependencies;
 
 	// list of registered process node callbacks created by input
 	// (exclusive ownership)
 	std::vector<signals::CallbackBase*> _callbacks;
+
+	// a slot to send a signal on data pointer changes
+	boost::shared_ptr<signals::Slot<OutputPointerSet> > _pointerSet;
 };
 
 template <typename DataType>
@@ -191,55 +194,97 @@ class OutputImpl : public OutputBase {
 
 public:
 
+	/**
+	 * Default constructor.
+	 */
 	OutputImpl() {}
 
-	template <typename S>
-	OutputImpl(const S& data) :
-		OutputBase(),
-		_data(data) {}
+	OutputImpl(DataType* data) : _data(data) {}
 
-	void createData() {
+	OutputImpl(boost::shared_ptr<DataType> data) : _data(data) {}
 
-		if (!_data) {
+	/**
+	 * Set the data of this output. The lifetime of the given object will be 
+	 * managed by a shared pointer.
+	 */
+	OutputImpl& operator=(DataType* data) {
 
-			LOG_ALL(pipelinelog) << "[" << typeName(this) << "] creating data" << std::endl;
+		_data = boost::shared_ptr<DataType>(data);
+		notifyPointerSet();
 
-			// TODO: this should be replaced by a factory
-			_data = boost::make_shared<DataType>();
-
-			LOG_ALL(pipelinelog) << "[" << typeName(this) << "] created data" << std::endl;
-		}
+		return *this;
 	}
 
-	boost::shared_ptr<Data> getData() const {
+	/**
+	 * Set the data of this output.
+	 */
+	OutputImpl& operator=(boost::shared_ptr<DataType> data) {
 
-		return get();
+		_data = data;
+		notifyPointerSet();
+
+		return *this;
 	}
 
-	boost::shared_ptr<DataType> get() const {
+	/**
+	 * Unset the data of this output. The data will be destructed, if no other 
+	 * object holds a shared pointer to it.
+	 */
+	void reset() {
 
-		return _data;
+		_data.reset();
 	}
 
+	/**
+	 * Get the data held by this output.
+	 */
+	DataType* get() const {
+
+		return _data.get();
+	}
+
+	/**
+	 * Member access to the data held by this output.
+	 */
 	DataType* operator->() const {
 
 		return _data.operator->();
 	}
 
+	/**
+	 * Dereferencation of the data held by this output.
+	 */
 	DataType& operator*() const {
 
 		return *_data;
 	}
 
-	operator boost::shared_ptr<DataType>() {
+	/**
+	 * Returns true, if this output holds data.
+	 */
+	operator bool() const {
 
 		return _data;
 	}
 
 	/**
-	 * Return true if the data for this output has been created.
+	 * Get a shared pointer to the Data instance held by this output.
 	 */
-	operator bool() {
+	boost::shared_ptr<Data> getSharedDataPointer() const {
+
+		return _data;
+	}
+
+	/**
+	 * Get a shared pointer to the concrete data type object held by this 
+	 * output.
+	 */
+	boost::shared_ptr<DataType> getSharedPointer() const {
+
+#ifndef NDEBUG
+		if (!_data)
+			BOOST_THROW_EXCEPTION(NullPointer() << error_message("This output does not point to valid data") << STACK_TRACE);
+#endif
 
 		return _data;
 	}
@@ -252,52 +297,113 @@ private:
 template <bool, typename T>
 class OutputTypeDispatch {};
 
+/**
+ * Dispatch class for Outputs of type T, where T is derived from Data.
+ */
 template <typename T>
 class OutputTypeDispatch<true, T> : public OutputImpl<T> {
 
+	typedef OutputImpl<T> parent_type;
+
 public:
 
-	OutputTypeDispatch() {};
+	OutputTypeDispatch() {}
 
-	template <typename S>
-	OutputTypeDispatch(const S& data) :
-		OutputImpl<T>(data) {}
+	OutputTypeDispatch(T* data) : parent_type(data) {}
+
+	OutputTypeDispatch(boost::shared_ptr<T> data) : parent_type(data) {}
+
+	using parent_type::operator=;
 };
 
+/**
+ * Dispatch class for Outputs of type T, where T is not derived from Data. In 
+ * this case, T will be wrapped into Wrap<T>, which is derived from Data.
+ */
 template <typename T>
 class OutputTypeDispatch<false, T> : public OutputImpl<Wrap<T> > {
 
+	typedef OutputImpl<Wrap<T> > parent_type;
+
 public:
 
-	OutputTypeDispatch() :
-		OutputImpl<Wrap<T> >(new Wrap<T>()) {};
+	OutputTypeDispatch() {}
 
-	template <typename S>
-	OutputTypeDispatch(const S& data) :
-		OutputImpl<Wrap<T> >(new Wrap<T>(data)) {}
+	OutputTypeDispatch(T* data) : parent_type(new Wrap<T>(boost::shared_ptr<T>(data))) {}
 
-	// transparent unwrapper
-	T& operator*() {
+	OutputTypeDispatch(boost::shared_ptr<T> data) : parent_type(new Wrap<T>(data)) {}
 
-		return OutputImpl<Wrap<T> >::get()->get();
+	/**
+	 * Set the data of this output. The lifetime of the given object will be 
+	 * managed by a shared pointer.
+	 */
+	OutputTypeDispatch& operator=(T* data) {
+
+		parent_type::operator=(new Wrap<T>(boost::shared_ptr<T>(data)));
+		return *this;
 	}
 
-	T* operator->() {
+	/**
+	 * Set the data of this output.
+	 */
+	OutputTypeDispatch& operator=(boost::shared_ptr<T> data) {
 
-		return &(OutputImpl<Wrap<T> >::get()->get());
+		parent_type::operator=(new Wrap<T>(data));
+		return *this;
 	}
+
+	/**
+	 * Get the data held by this output.
+	 */
+	T* get() const {
+
+		return parent_type::getSharedPointer()->getSharedPointer().get();
+	}
+
+	/**
+	 * Member access to the data held by this output.
+	 */
+	T* operator->() const {
+
+		return parent_type::getSharedPointer()->getSharedPointer().operator->();
+	}
+
+	/**
+	 * Dereferencation of the data held by this output.
+	 */
+	T& operator*() const {
+
+		return *parent_type::getSharedPointer()->get();
+	}
+
+	using parent_type::operator=;
 };
 
 template <typename T>
 class Output : public OutputTypeDispatch<boost::is_base_of<Data, T>::value, T> {
 
+	typedef OutputTypeDispatch<boost::is_base_of<Data, T>::value, T> parent_type;
+
 public:
 
-	Output() {};
+	/**
+	 * Default constructur. Creates an output instance with an uninitialized 
+	 * data pointer.
+	 */
+	Output() {}
 
-	template <typename S>
-	Output(const S& data) :
-		OutputTypeDispatch<boost::is_base_of<Data, T>::value, T>(data) {}
+	/**
+	 * Creates an output instance from a data object pointer. The lifetime of 
+	 * the data object will be managed by a shared pointer.
+	 */
+	Output(T* data) : parent_type(data) {}
+
+	/**
+	 * Creates an output instance from a shared data object pointer.
+	 */
+	Output(boost::shared_ptr<T> data) : parent_type(data) {}
+
+	using parent_type::operator=;
 };
 
 } // namespace pipeline

@@ -52,7 +52,7 @@ public:
 
 		if (input.hasAssignedOutput()) {
 
-			boost::shared_lock<boost::shared_mutex> lock(input.getAssignedSharedPtr()->getMutex());
+			boost::shared_lock<boost::shared_mutex> lock(input.getSharedDataPointer()->getMutex());
 
 			next();
 
@@ -74,18 +74,22 @@ public:
 
 	void lockOutput(OutputBase& output, boost::function<void()> next) {
 
-		if (!output)
-			output.createData();
+		if (output.getSharedDataPointer()) {
 
-		// Instantiation here ensures that the output data survives, even if the 
-		// owning Output decides to replace it. Since we are using the mutex of 
-		// the data and not of the output, we have to make sure the data does 
-		// not get destructed before we are done.
-		boost::shared_ptr<Data> data = output.getData();
+			// Instantiation here ensures that the output data survives, even if 
+			// the owning Output decides to replace it. Since we are using the 
+			// mutex of the data and not of the output, we have to make sure the 
+			// data does not get destructed before we are done.
+			boost::shared_ptr<Data> data = output.getSharedDataPointer();
 
-		boost::unique_lock<boost::shared_mutex> lock(data->getMutex());
+			boost::unique_lock<boost::shared_mutex> lock(data->getMutex());
 
-		next();
+			next();
+
+		} else {
+
+			next();
+		}
 	}
 
 	using NoLockingStrategy::lockInput;

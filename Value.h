@@ -34,7 +34,7 @@ private:
 
 			updateInputs();
 
-			return _data.get();
+			return _data.getSharedPointer();
 		}
 
 	private:
@@ -58,7 +58,7 @@ public:
 	 */
 	T& operator*() {
 
-		return *get();
+		return *getSharedPointer();
 	}
 
 	/**
@@ -66,7 +66,7 @@ public:
 	 */
 	T* operator->() {
 
-		return get().operator->();
+		return getSharedPointer().operator->();
 	}
 
 	/**
@@ -76,7 +76,7 @@ public:
 	 */
 	operator boost::shared_ptr<T>() {
 
-		return get();
+		return getSharedPointer();
 	}
 
 protected:
@@ -97,7 +97,7 @@ protected:
 	/**
 	 * Get a boost::shared_ptr to the data stored by this pipeline value.
 	 */
-	boost::shared_ptr<T> get() {
+	boost::shared_ptr<T> getSharedPointer() {
 
 		return _updateValue->get();
 	}
@@ -125,13 +125,13 @@ public:
 	// transparent unwrapper
 	T& operator*() {
 
-		return ValueImpl<Wrap<T> >::get()->get();
+		return *parent_type::getSharedPointer()->get();
 	}
 
 	// transparent -> operator
 	T* operator->() {
 
-		return &(ValueImpl<Wrap<T> >::get()->get());
+		return parent_type::getSharedPointer()->get();
 	}
 
 	void set(boost::shared_ptr<T> p) {

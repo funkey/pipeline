@@ -411,7 +411,7 @@ private:
 	}
 
 	// inherited from InputBase, but not used in Inputs
-	boost::shared_ptr<Data> getAssignedSharedPtr() const {
+	boost::shared_ptr<Data> getSharedDataPointer() const {
 
 		return boost::shared_ptr<Data>();
 	}

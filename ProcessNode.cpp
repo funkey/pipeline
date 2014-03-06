@@ -62,7 +62,7 @@ ProcessNode::setInput(const InputBase& input) {
 	if (input.hasAssignedOutput())
 		return getInput().accept(input.getAssignedOutput());
 	else
-		return getInput().accept(input.getAssignedSharedPtr());
+		return getInput().accept(input.getSharedDataPointer());
 }
 
 bool
@@ -71,7 +71,7 @@ ProcessNode::setInput(unsigned int i, const InputBase& input) {
 	if (input.hasAssignedOutput())
 		return getInput(i).accept(input.getAssignedOutput());
 	else
-		return getInput(i).accept(input.getAssignedSharedPtr());
+		return getInput(i).accept(input.getSharedDataPointer());
 }
 
 bool
@@ -80,7 +80,7 @@ ProcessNode::setInput(const std::string& name, const InputBase& input) {
 	if (input.hasAssignedOutput())
 		return getInput(name).accept(input.getAssignedOutput());
 	else
-		return getInput(name).accept(input.getAssignedSharedPtr());
+		return getInput(name).accept(input.getSharedDataPointer());
 }
 
 bool
@@ -107,7 +107,7 @@ ProcessNode::addInput(const InputBase& input) {
 	if (input.hasAssignedOutput())
 		return getMultiInput().accept(input.getAssignedOutput());
 	else
-		return getMultiInput().accept(input.getAssignedSharedPtr());
+		return getMultiInput().accept(input.getSharedDataPointer());
 
 	return false;
 }
@@ -118,7 +118,7 @@ ProcessNode::addInput(unsigned int i, const InputBase& input) {
 	if (input.hasAssignedOutput())
 		return getMultiInput(i).accept(input.getAssignedOutput());
 	else
-		return getMultiInput(i).accept(input.getAssignedSharedPtr());
+		return getMultiInput(i).accept(input.getSharedDataPointer());
 
 	return false;
 }
@@ -129,7 +129,7 @@ ProcessNode::addInput(const std::string& name, const InputBase& input) {
 	if (input.hasAssignedOutput())
 		return getMultiInput(name).accept(input.getAssignedOutput());
 	else
-		return getMultiInput(name).accept(input.getAssignedSharedPtr());
+		return getMultiInput(name).accept(input.getSharedDataPointer());
 
 	return false;
 }
@@ -182,7 +182,7 @@ ProcessNode::getOutput(std::string name) {
 }
 
 boost::shared_ptr<ProcessNode>
-ProcessNode::getSharedPtr() {
+ProcessNode::getSelfSharedPointer() {
 
 	return this->shared_from_this();
 }
@@ -206,7 +206,7 @@ ProcessNode::registerInputs(MultiInput& input, std::string name) {
 void
 ProcessNode::registerOutput(OutputBase& output, std::string name) {
 
-	output.setProcessNode(this);
+	output.addDependency(this);
 
 	_outputs.push_back(&output);
 

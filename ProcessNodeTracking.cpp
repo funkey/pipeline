@@ -8,7 +8,7 @@ namespace pipeline {
 boost::shared_ptr<ProcessNode>
 ProcessNodeTracking::getHolder() {
 
-	return _holder->getSharedPtr();
+	return _holder->getSelfSharedPointer();
 }
 
 } // namespace pipeline
