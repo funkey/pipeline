@@ -18,6 +18,26 @@ public:
 		_holder = holder;
 	}
 
+protected:
+
+	boost::shared_ptr<ProcessNode> getHolder();
+
+private:
+
+	mutable ProcessNode* _holder;
+};
+
+/**
+ * Weak pointer tracking strategy for callbacks. For callbacks that use this 
+ * strategy, a connected slot will keep a weak pointer to the callback's holder 
+ * (set via track() on the callback). The weak pointer is locked whenever a 
+ * signal needs to be sent. If locking fails, i.e., the holder does not live 
+ * anymore, the callback gets automatically removed from the slot.
+ */
+class WeakProcessNodeTracking : public ProcessNodeTracking {
+
+public:
+
 	template <typename CallbackType>
 	typename boost::signals2::signal<void(typename CallbackType::signal_type&)>::slot_type wrap(CallbackType& callback) {
 
@@ -27,14 +47,41 @@ public:
 
 		return boost_slot_type(boost::ref(callback)).track(getHolder());
 	}
+};
 
-protected:
+/**
+ * Shared pointer tracking for callbacks. For callbacks that use this strategy, 
+ * a connected slot will keep a shared pointer to the callback's holder and thus 
+ * makes sure that the holder will live at least as long as the connection to 
+ * the slot is established.
+ */
+class SharedProcessNodeTracking : public ProcessNodeTracking {
 
-	boost::shared_ptr<ProcessNode> getHolder();
+public:
 
-private:
+	template <typename CallbackType>
+	struct SharedHolderCallback {
 
-	mutable ProcessNode* _holder;
+		SharedHolderCallback(CallbackType& callback_, boost::shared_ptr<ProcessNode> holder_) :
+			callback(&callback_),
+			holder(holder_) {}
+
+		void operator()(typename CallbackType::signal_type& signal) {
+
+			(*callback)(signal);
+		}
+
+		CallbackType* callback;
+		boost::shared_ptr<ProcessNode> holder;
+	};
+
+	template <typename CallbackType>
+	SharedHolderCallback<CallbackType> wrap(CallbackType& callback) {
+
+		boost::shared_ptr<ProcessNode> sharedHolder = getHolder();
+
+		return SharedHolderCallback<CallbackType>(callback, sharedHolder);
+	}
 };
 
 } // namespace pipeline

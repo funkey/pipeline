@@ -114,7 +114,7 @@ public:
 	template <class T, typename SignalType>
 	void registerForwardCallback(void (T::*callback)(SignalType&), T* processNode, signals::CallbackInvocation invocation = signals::Exclusive) {
 
-		ProcessNodeCallback<SignalType>* processNodeCallback = new ProcessNodeCallback<SignalType>(processNode, boost::bind(callback, static_cast<T*>(processNode), _1), invocation);
+		SharedProcessNodeCallback<SignalType>* processNodeCallback = new SharedProcessNodeCallback<SignalType>(processNode, boost::bind(callback, processNode, _1), invocation);
 
 		registerForwardCallback(*processNodeCallback);
 
@@ -132,7 +132,7 @@ public:
 	template <typename SignalType>
 	void registerForwardCallback(boost::function<void(SignalType&)> callback, ProcessNode* processNode, signals::CallbackInvocation invocation = signals::Exclusive) {
 
-		ProcessNodeCallback<SignalType>* processNodeCallback = new ProcessNodeCallback<SignalType>(processNode, callback, invocation);
+		SharedProcessNodeCallback<SignalType>* processNodeCallback = new SharedProcessNodeCallback<SignalType>(processNode, callback, invocation);
 
 		registerForwardCallback(*processNodeCallback);
 
