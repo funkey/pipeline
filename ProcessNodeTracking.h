@@ -2,7 +2,7 @@
 #define PROCESS_NODE_TRACKING_H__
 
 #include <boost/shared_ptr.hpp>
-#include <boost/signals2/signal.hpp>
+#include <signals/CallbackInvoker.h>
 
 namespace pipeline {
 
@@ -38,14 +38,13 @@ class WeakProcessNodeTracking : public ProcessNodeTracking {
 
 public:
 
-	template <typename CallbackType>
-	typename boost::signals2::signal<void(typename CallbackType::signal_type&)>::slot_type wrap(CallbackType& callback) {
+	template <typename SignalType>
+	signals::CallbackInvoker<SignalType> createInvoker(boost::reference_wrapper<boost::function<void(SignalType&)> > callback) {
 
-		typedef typename CallbackType::signal_type          signal_type;
-		typedef boost::signals2::signal<void(signal_type&)> boost_signal_type;
-		typedef typename boost_signal_type::slot_type       boost_slot_type;
+		signals::CallbackInvoker<SignalType> invoker(callback);
+		invoker.setWeakTracking(getHolder());
 
-		return boost_slot_type(boost::ref(callback)).track(getHolder());
+		return invoker;
 	}
 };
 
@@ -59,28 +58,13 @@ class SharedProcessNodeTracking : public ProcessNodeTracking {
 
 public:
 
-	template <typename CallbackType>
-	struct SharedHolderCallback {
+	template <typename SignalType>
+	signals::CallbackInvoker<SignalType> createInvoker(boost::reference_wrapper<boost::function<void(SignalType&)> > callback) {
 
-		SharedHolderCallback(CallbackType& callback_, boost::shared_ptr<ProcessNode> holder_) :
-			callback(&callback_),
-			holder(holder_) {}
+		signals::CallbackInvoker<SignalType> invoker(callback);
+		invoker.setSharedTracking(getHolder());
 
-		void operator()(typename CallbackType::signal_type& signal) {
-
-			(*callback)(signal);
-		}
-
-		CallbackType* callback;
-		boost::shared_ptr<ProcessNode> holder;
-	};
-
-	template <typename CallbackType>
-	SharedHolderCallback<CallbackType> wrap(CallbackType& callback) {
-
-		boost::shared_ptr<ProcessNode> sharedHolder = getHolder();
-
-		return SharedHolderCallback<CallbackType>(callback, sharedHolder);
+		return invoker;
 	}
 };
 
