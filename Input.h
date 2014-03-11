@@ -404,6 +404,14 @@ class InputTypeDispatch<false, T> : public InputImpl<Wrap<T> > {
 public:
 
 	/**
+	 * Get a shared pointer to the data assigned to this input.
+	 */
+	boost::shared_ptr<T> getSharedPointer() const {
+
+		return parent_type::getSharedPointer()->getSharedPointer();
+	}
+
+	/**
 	 * Get the data assigned to this input.
 	 */
 	T* get() const {
