@@ -221,8 +221,7 @@ public:
 		setAssignedOutput(output);
 
 		// if there is already data on the output
-		if (output.getSharedDataPointer())
-			setDataFromOutput(output.getSharedDataPointer());
+		setDataFromOutput(output.getSharedDataPointer());
 
 		return true;
 	}
@@ -331,24 +330,27 @@ private:
 
 	void setDataFromOutput(boost::shared_ptr<Data> data) {
 
-		boost::shared_ptr<DataType> castedData = boost::dynamic_pointer_cast<DataType>(data);
-
-		if (!castedData) {
-
-			std::stringstream error;
-			error << "output of type " << typeName(*data) << " can not be assigned to input of type " << typeName(*this) << std::endl;
-
-			BOOST_THROW_EXCEPTION(AssignmentError() << error_message(error.str()) << STACK_TRACE);
-		}
-
-		// share ownership to make sure the input data keeps alive
-		_data = castedData;
+		setData(data);
 
 		// inform about new input
-		(*_inputSet)(InputSet<DataType>(castedData));
+		(*_inputSet)(InputSet<DataType>(_data));
 	}
 
 	void setDataFromPointer(boost::shared_ptr<Data> data) {
+
+		setData(data);
+
+		// inform about new input
+		(*_inputSetToSharedPointer)(InputSetToSharedPointer<DataType>(_data));
+	}
+
+	void setData(boost::shared_ptr<Data> data) {
+
+		if (!data) {
+
+			_data.reset();
+			return;
+		}
 
 		boost::shared_ptr<DataType> castedData = boost::dynamic_pointer_cast<DataType>(data);
 
@@ -362,9 +364,6 @@ private:
 
 		// share ownership to make sure the input data keeps alive
 		_data = castedData;
-
-		// inform about new input
-		(*_inputSetToSharedPointer)(InputSetToSharedPointer<DataType>(castedData));
 	}
 
 	void onOutputPointerSet(const OutputPointerSet&) {
