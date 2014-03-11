@@ -312,6 +312,14 @@ public:
 	}
 
 	/**
+	 * Return true if this input points to data.
+	 */
+	bool isSet() {
+
+		return _data;
+	}
+
+	/**
 	 * For convencience, implicit conversion to shared pointer to DataType.
 	 */
 	operator boost::shared_ptr<DataType>() const {
