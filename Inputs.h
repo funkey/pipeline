@@ -1,6 +1,7 @@
 #ifndef PIPELINE_INPUTS_H__
 #define PIPELINE_INPUTS_H__
 
+#include <boost/iterator/indirect_iterator.hpp>
 #include <signals/Slots.h>
 #include <util/foreach.h>
 #include "Callbacks.h"
@@ -226,7 +227,7 @@ class input_added_to_shared_pointer_dispatch : public _input_added_to_shared_poi
 template <typename DataType>
 class Inputs : public MultiInput {
 
-	typedef std::vector<Input<DataType> > inputs_type;
+	typedef std::vector<boost::shared_ptr<Input<DataType> > > inputs_type;
 
 	// this type is InputAdded<Wrap<DataType> > if DataType not base of Data,
 	// InputAdded<DataType> otherwise
@@ -235,9 +236,8 @@ class Inputs : public MultiInput {
 
 public:
 
-	typedef typename inputs_type::const_iterator const_iterator;
-
-	typedef typename inputs_type::iterator       iterator;
+	typedef boost::indirect_iterator<typename inputs_type::const_iterator, Input<DataType> > const_iterator;
+	typedef boost::indirect_iterator<typename inputs_type::iterator,       Input<DataType> > iterator;
 
 	Inputs() :
 		_internalConnected(false) {
@@ -272,32 +272,32 @@ public:
 
 	const Input<DataType>& operator[](unsigned int i) const {
 
-		return _inputs[i];
+		return *_inputs[i];
 	}
 
 	Input<DataType>& operator[](unsigned int i) {
 
-		return _inputs[i];
+		return *_inputs[i];
 	}
 
 	const const_iterator& begin() const {
 
-		return _inputs.begin();
+		return const_iterator(_inputs.begin());
 	}
 
 	iterator begin() {
 
-		return _inputs.begin();
+		return iterator(_inputs.begin());
 	}
 
 	const const_iterator& end() const {
 
-		return _inputs.end();
+		return const_iterator(_inputs.end());
 	}
 
 	iterator end() {
 
-		return _inputs.end();
+		return iterator(_inputs.end());
 	}
 
 	/**
@@ -328,10 +328,10 @@ private:
 		LOG_ALL(pipelinelog) << "[" << typeName(this) << "] trying to accept output " << typeName(output) << std::endl;
 
 		// create a new input
-		Input<DataType> newInput;
+		boost::shared_ptr<Input<DataType> > newInput(new Input<DataType>());
 
 		// store it, if it is compatible
-		if (newInput.accept(output)) {
+		if (newInput->accept(output)) {
 
 			LOG_ALL(pipelinelog) << "[" << typeName(this) << "] I can accept it" << std::endl;
 
@@ -343,7 +343,7 @@ private:
 
 				unsigned int s = slots->addSlot();
 
-				newInput.registerSlot((*slots)[s]);
+				newInput->registerSlot((*slots)[s]);
 
 				LOG_ALL(pipelinelog) << "[" << typeName(this) << "] " << typeName((*slots)[s]) << std::endl;
 			}
@@ -357,9 +357,9 @@ private:
 				ProcessNode*   processNode   = pair.second;
 
 				if (processNode)
-					multiCallback->registerAtInput(newInput, numInput, processNode);
+					multiCallback->registerAtInput(*newInput, numInput, processNode);
 				else
-					multiCallback->registerAtInput(newInput, numInput);
+					multiCallback->registerAtInput(*newInput, numInput);
 
 				LOG_ALL(pipelinelog) << "[" << typeName(this) << "] " << typeName(multiCallback) << std::endl;
 			}
@@ -374,7 +374,7 @@ private:
 
 			LOG_ALL(pipelinelog) << "[" << typeName(this) << "] establishing signalling connections" << std::endl;
 
-			establishingSignalling(output, newInput);
+			establishingSignalling(output, *newInput);
 
 			_inputs.push_back(newInput);
 
