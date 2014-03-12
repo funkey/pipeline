@@ -248,6 +248,11 @@ public:
 	 */
 	DataType* operator->() const {
 
+#ifndef NDEBUG
+		if (!_data)
+			UTIL_THROW_EXCEPTION(NullPointer, "This output does not point to valid data");
+#endif
+
 		return _data.operator->();
 	}
 
@@ -255,6 +260,11 @@ public:
 	 * Dereferencation of the data held by this output.
 	 */
 	DataType& operator*() const {
+
+#ifndef NDEBUG
+		if (!_data)
+			UTIL_THROW_EXCEPTION(NullPointer, "This output does not point to valid data");
+#endif
 
 		return *_data;
 	}
@@ -280,11 +290,6 @@ public:
 	 * output.
 	 */
 	boost::shared_ptr<DataType> getSharedPointer() const {
-
-#ifndef NDEBUG
-		if (!_data)
-			BOOST_THROW_EXCEPTION(NullPointer() << error_message("This output does not point to valid data") << STACK_TRACE);
-#endif
 
 		return _data;
 	}

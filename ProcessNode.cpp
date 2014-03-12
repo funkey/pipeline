@@ -156,11 +156,9 @@ OutputBase&
 ProcessNode::getOutput(unsigned int i) {
 
 	if (_outputs.size() <= i)
-		BOOST_THROW_EXCEPTION(
-				NotEnoughOutputs() << error_message("not enough outputs")
-				                   << mismatch_size1(_outputs.size())
-				                   << mismatch_size2(i)
-				                   << STACK_TRACE);
+		UTIL_THROW_EXCEPTION(
+				NotEnoughOutputs,
+				"invalid output number " << i << ", this process node has only " << _outputs.size() " outputs");
 
 	return *_outputs[i];
 }
@@ -172,9 +170,10 @@ ProcessNode::getOutput(std::string name) {
 
 	if (!_outputNames.count(name)) {
 
-		BOOST_THROW_EXCEPTION(
-				NoSuchOutput() << error_message("no such output: " + name)
-							   << STACK_TRACE);
+		UTIL_THROW_EXCEPTION(
+				NoSuchOutput,
+				"no such output: " << name);
+
 	} else {
 
 		return *_outputNames[name];
@@ -223,11 +222,9 @@ InputBase&
 ProcessNode::getInput(unsigned int i) {
 
 	if (_inputs.size() <= i)
-		BOOST_THROW_EXCEPTION(
-				NotEnoughInputs() << error_message("not enough inputs")
-				                  << mismatch_size1(_inputs.size())
-				                  << mismatch_size2(i)
-				                  << STACK_TRACE);
+		UTIL_THROW_EXCEPTION(
+				NotEnoughInputs
+				"invalid input number " << i << ", this process node has only " << _inputs.size() " inputs");
 
 	return *_inputs[i];
 }
@@ -237,9 +234,10 @@ ProcessNode::getInput(std::string name) {
 
 	if (!_inputNames.count(name)) {
 
-		BOOST_THROW_EXCEPTION(
-				NoSuchInput() << error_message("no such input: " + name)
-							  << STACK_TRACE);
+		UTIL_THROW_EXCEPTION(
+				NoSuchInput,
+				"no such input: " << name);
+
 	} else {
 
 		return *_inputNames[name];
@@ -256,11 +254,9 @@ MultiInput&
 ProcessNode::getMultiInput(unsigned int i) {
 
 	if (_multiInputs.size() <= i)
-		BOOST_THROW_EXCEPTION(
-				NotEnoughInputs() << error_message("not enough inputs")
-				                  << mismatch_size1(_inputs.size())
-				                  << mismatch_size2(i)
-				                  << STACK_TRACE);
+		UTIL_THROW_EXCEPTION(
+				NotEnoughInputs
+				"invalid multi-input number " << i << ", this process node has only " << _multiInputs.size() " multi-inputs");
 
 	return *_multiInputs[i];
 }
@@ -270,9 +266,10 @@ ProcessNode::getMultiInput(std::string name) {
 
 	if (!_multiInputNames.count(name)) {
 
-		BOOST_THROW_EXCEPTION(
-				NoSuchInput() << error_message("no such input: " + name)
-							  << STACK_TRACE);
+		UTIL_THROW_EXCEPTION(
+				NoSuchInput,
+				"no such input: " << name);
+
 	} else {
 
 		return *_multiInputNames[name];

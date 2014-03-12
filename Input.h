@@ -291,6 +291,11 @@ public:
 	 */
 	DataType* operator->() const {
 
+#ifndef NDEBUG
+		if (!_data)
+			UTIL_THROW_EXCEPTION(NullPointer, "This input does not point to valid data");
+#endif
+
 		return _data.operator->();
 	}
 
@@ -298,6 +303,11 @@ public:
 	 * Dereferencation of the data assigned to this input.
 	 */
 	DataType& operator*() const {
+
+#ifndef NDEBUG
+		if (!_data)
+			UTIL_THROW_EXCEPTION(NullPointer, "This input does not point to valid data");
+#endif
 
 		return *_data;
 	}
@@ -354,13 +364,10 @@ private:
 
 		boost::shared_ptr<DataType> castedData = boost::dynamic_pointer_cast<DataType>(data);
 
-		if (!castedData) {
-
-			std::stringstream error;
-			error << "pointer of type " << typeName(*data) << " can not be assigned to input of type " << typeName(*this) << std::endl;
-
-			BOOST_THROW_EXCEPTION(AssignmentError() << error_message(error.str()) << STACK_TRACE);
-		}
+		if (!castedData)
+			UTIL_THROW_EXCEPTION(
+					AssignmentError,
+					"pointer of type " << typeName(*data) << " can not be assigned to input of type " << typeName(*this));
 
 		// share ownership to make sure the input data keeps alive
 		_data = castedData;

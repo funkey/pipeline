@@ -28,6 +28,11 @@ InputBase::hasAssignedOutput() const {
 OutputBase&
 InputBase::getAssignedOutput() const {
 
+#ifndef NDEBUG
+	if (_assignedOutput == 0)
+		UTIL_THROW_EXCEPTION(NullPointer, "This input does not have an assigned output");
+#endif
+
 	return *_assignedOutput;
 }
 
