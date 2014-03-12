@@ -50,7 +50,7 @@ public:
 
 	void lockInput(InputBase& input, boost::function<void()> next) {
 
-		if (input.hasAssignedOutput()) {
+		if (input.hasAssignedOutput() && input.getSharedDataPointer()) {
 
 			boost::shared_lock<boost::shared_mutex> lock(input.getSharedDataPointer()->getMutex());
 
