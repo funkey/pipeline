@@ -1,4 +1,5 @@
 #include "ProcessNode.h"
+#include <util/exceptions.h>
 
 namespace pipeline {
 
@@ -155,10 +156,12 @@ ProcessNode::getOutput() {
 OutputBase&
 ProcessNode::getOutput(unsigned int i) {
 
-	if (_outputs.size() <= i)
+	if (_outputs.size() <= i) {
+
 		UTIL_THROW_EXCEPTION(
 				NotEnoughOutputs,
-				"invalid output number " << i << ", this process node has only " << _outputs.size() " outputs");
+				"invalid output number " << i << ", this process node has only " << _outputs.size() << " outputs");
+	}
 
 	return *_outputs[i];
 }
@@ -223,8 +226,8 @@ ProcessNode::getInput(unsigned int i) {
 
 	if (_inputs.size() <= i)
 		UTIL_THROW_EXCEPTION(
-				NotEnoughInputs
-				"invalid input number " << i << ", this process node has only " << _inputs.size() " inputs");
+				NotEnoughInputs,
+				"invalid input number " << i << ", this process node has only " << _inputs.size() << " inputs");
 
 	return *_inputs[i];
 }
@@ -255,8 +258,8 @@ ProcessNode::getMultiInput(unsigned int i) {
 
 	if (_multiInputs.size() <= i)
 		UTIL_THROW_EXCEPTION(
-				NotEnoughInputs
-				"invalid multi-input number " << i << ", this process node has only " << _multiInputs.size() " multi-inputs");
+				NotEnoughInputs,
+				"invalid multi-input number " << i << ", this process node has only " << _multiInputs.size() << " multi-inputs");
 
 	return *_multiInputs[i];
 }
