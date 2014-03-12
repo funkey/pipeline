@@ -375,7 +375,7 @@ private:
 
 	void onOutputPointerSet(const OutputPointerSet&) {
 
-		setDataFromOutput(getAssignedOutput().getSharedDataPointer());
+		setData(getAssignedOutput().getSharedDataPointer());
 	}
 
 	// inputs share ownership of input data
