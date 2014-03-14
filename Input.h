@@ -166,6 +166,8 @@ public:
 	 */
 	virtual operator bool() const = 0;
 
+	virtual bool isSet() = 0;
+
 	signals::Sender& getSender();
 
 	signals::Receiver& getReceiver();

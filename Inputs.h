@@ -316,6 +316,11 @@ public:
 		return size() > 0;
 	}
 
+	bool isSet() {
+
+		return size() > 0;
+	}
+
 private:
 
 	/**

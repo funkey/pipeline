@@ -589,8 +589,14 @@ SimpleProcessNode<LockingStrategy>::requiredInputsPresent() {
 
 	// check inputs
 	for (int i = 0; i < _numInputs; i++)
-		if (!getInput(i) && _inputRequired[i])
+		if (!(getInput(i).isSet() || getInput(i).hasAssignedOutput()) && _inputRequired[i]) {
+
+			LOG_ALL(simpleprocessnodelog)
+					<< getLogPrefix() << " required input " << i << ": isSet() == "
+					<< getInput(i).isSet() << ", hasAssignedOutput() == "
+					<< getInput(i).hasAssignedOutput() << std::endl;
 			return false;
+		}
 
 	return true;
 }
