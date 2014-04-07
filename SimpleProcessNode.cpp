@@ -3,7 +3,7 @@
 #include "ProcessNode.h"
 #include "SimpleProcessNode.h"
 
-logger::LogChannel simpleprocessnodelog("simpleprocessnodelog");
+logger::LogChannel simpleprocessnodelog("simpleprocessnodelog", "", logger::Quiet);
 
 namespace pipeline {
 
