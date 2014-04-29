@@ -319,7 +319,7 @@ public:
 	 */
 	DEPRECATED(operator bool() const) {
 
-		return _data;
+		return static_cast<bool>(_data);
 	}
 
 	/**
@@ -327,7 +327,7 @@ public:
 	 */
 	bool isSet() {
 
-		return _data;
+		return static_cast<bool>(_data);
 	}
 
 	/**
