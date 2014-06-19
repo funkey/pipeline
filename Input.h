@@ -195,17 +195,24 @@ private:
 template <typename DataType>
 class InputImpl : public InputBase {
 
+	typedef signals::Callback<OutputPointerSet, signals::WeakTracking<signals::CallbackBase> > InternalCallbackType;
+
 public:
 
 	InputImpl() :
 		_inputSet(boost::make_shared<signals::Slot<const InputSet<DataType> > >()),
 		_inputSetToSharedPointer(boost::make_shared<signals::Slot<const InputSetToSharedPointer<DataType> > >()),
 		_inputUnset(boost::make_shared<signals::Slot<const InputUnset<DataType> > >()),
-		_outputPointerSetCallback(new signals::Callback<OutputPointerSet>(boost::bind(&InputImpl<DataType>::onOutputPointerSet, this, _1))) {
+		_outputPointerSetCallback(new InternalCallbackType(boost::bind(&InputImpl<DataType>::onOutputPointerSet, this, _1))) {
 
 		_internalSender.registerSlot(*_inputSet);
 		_internalSender.registerSlot(*_inputSetToSharedPointer);
 		_internalSender.registerSlot(*_inputUnset);
+
+		// Let this callback track itself weakly. Invokers created from this 
+		// callback will check whether the callback still exists before 
+		// attempting to call it.
+		_outputPointerSetCallback->track(_outputPointerSetCallback);
 
 		getReceiver().registerCallback(*_outputPointerSetCallback);
 	}
@@ -396,7 +403,7 @@ private:
 	signals::Sender _internalSender;
 
 	// callback for OutputPointerSet signals
-	boost::shared_ptr<signals::Callback<OutputPointerSet> > _outputPointerSetCallback;
+	boost::shared_ptr<InternalCallbackType> _outputPointerSetCallback;
 };
 
 template <bool, typename T>
