@@ -274,7 +274,7 @@ public:
 	 */
 	operator bool() const {
 
-		return _data;
+		return static_cast<bool>(_data);
 	}
 
 	/**
