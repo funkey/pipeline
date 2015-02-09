@@ -495,7 +495,7 @@ SimpleProcessNode<LockingStrategy>::sendUpdateSignals() {
 
 template <typename LockingStrategy>
 void
-SimpleProcessNode<LockingStrategy>::sendModifiedSignals(int numInput, int numMultiInput = -1) {
+SimpleProcessNode<LockingStrategy>::sendModifiedSignals(int numInput, int numMultiInput) {
 
 	// first, check if the user has set an input-output dirty mapping and use 
 	// it, if present

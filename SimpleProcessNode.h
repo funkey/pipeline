@@ -242,7 +242,7 @@ private:
 	// thread save (by locking)
 	void sendUpdateSignals();
 
-	void sendModifiedSignals(int numIntput, int numMultiInput);
+	void sendModifiedSignals(int numIntput, int numMultiInput = -1);
 
 	bool haveDirtyInput();
 
