@@ -12,7 +12,7 @@ namespace pipeline {
  * Base for the specialized InputSet classes. Use this signal, if you are not
  * interested in the type of the input.
  */
-class InputSetBase : public Modified {};
+class InputSetBase : public Modified { public: InputSetBase() {}; };
 
 /**
  * Input set notification. Internally elicited, whenever one of the
@@ -225,7 +225,7 @@ private:
  * Multi-input clear notification. Internally eliceted, whenever one of the 
  * clearInputs(...) methods of a ProcessNode has been called.
  */
-class InputsCleared : public InputRemovedBase {};
+class InputsCleared : public InputRemovedBase { public: InputsCleared() {}; };
 
 } // namespace pipeline
 
