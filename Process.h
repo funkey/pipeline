@@ -42,6 +42,8 @@ public:
 		return *this;
 	}
 
+	boost::shared_ptr<Operator> getOperator() const { return _operator; }
+
 private:
 
 	boost::shared_ptr<Operator> _operator;
