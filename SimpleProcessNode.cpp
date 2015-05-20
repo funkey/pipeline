@@ -307,11 +307,11 @@ SimpleProcessNode<LockingStrategy>::onMultiInputModified(const Modified& /*signa
 
 template <typename LockingStrategy>
 void
-SimpleProcessNode<LockingStrategy>::onUpdate(const Update& /*signal*/, int /*numOutput*/) {
+SimpleProcessNode<LockingStrategy>::onUpdate(const Update& /*signal*/, int numOutput) {
 
 	boost::mutex::scoped_lock lock(_updateMutex);
 
-	LOG_ALL(simpleprocessnodelog) << getLogPrefix() << " input update requested by another process node" << std::endl;
+	LOG_ALL(simpleprocessnodelog) << getLogPrefix() << " input update requested by another process node via output " << numOutput << std::endl;
 
 	{
 		boost::mutex::scoped_lock inputDirtyLock(_inputDirtyMutex);
@@ -325,7 +325,7 @@ SimpleProcessNode<LockingStrategy>::onUpdate(const Update& /*signal*/, int /*num
 
 			LOG_ALL(simpleprocessnodelog) << getLogPrefix() << " I have some dirty inputs -- sending update signals" << std::endl;
 
-			sendUpdateSignals();
+			sendUpdateSignals(numOutput);
 		}
 	}
 
@@ -367,7 +367,7 @@ SimpleProcessNode<LockingStrategy>::onUpdate(const Update& /*signal*/, int /*num
 
 template <typename LockingStrategy>
 void
-SimpleProcessNode<LockingStrategy>::sendUpdateSignals() {
+SimpleProcessNode<LockingStrategy>::sendUpdateSignals(int numOutput) {
 
 	boost::mutex::scoped_lock inputLock(_inputMutex);
 
@@ -378,6 +378,9 @@ SimpleProcessNode<LockingStrategy>::sendUpdateSignals() {
 
 	// ask all dirty inputs for updates
 	for (int i = 0; i < _numInputs; i++) {
+
+		if (!inputOutputDepends(i, numOutput))
+			continue;
 
 		// lock access to _inputDirty to avoid race conditions
 		boost::mutex::scoped_lock inputDirtyLock(_inputDirtyMutex);
@@ -429,7 +432,11 @@ SimpleProcessNode<LockingStrategy>::sendUpdateSignals() {
 	}
 
 	// ask all dirty multi-inputs for updates
-	for (int i = 0; i < _numMultiInputs; i++)
+	for (int i = 0; i < _numMultiInputs; i++) {
+
+		if (!multiInputOutputDepends(i, numOutput))
+			continue;
+
 		for (unsigned int j = 0; j < _multiInputDirty[i].size(); j++) {
 
 			// lock access to _multiInputDirty to avoid race conditions
@@ -480,6 +487,7 @@ SimpleProcessNode<LockingStrategy>::sendUpdateSignals() {
 				}
 			}
 		}
+	}
 
 	if (workers.size() > 0) {
 
@@ -599,6 +607,48 @@ SimpleProcessNode<LockingStrategy>::requiredInputsPresent() {
 		}
 
 	return true;
+}
+
+template <typename LockingStrategy>
+bool
+SimpleProcessNode<LockingStrategy>::inputOutputDepends(int numInput, int numOutput) {
+
+	if (_inputDirtys[numInput].size() == 0 || numOutput == -1) {
+
+		LOG_ALL(simpleprocessnodelog) << getLogPrefix() << "output " << numOutput << " does implicitly depend on " << numInput << std::endl;
+		return true;
+	}
+
+	for (int i = 0; i < _inputDirtys[numInput].size(); i++)
+		if (_inputDirtys[numInput][i] == numOutput) {
+
+			LOG_ALL(simpleprocessnodelog) << getLogPrefix() << "output " << numOutput << " does explicitly depend on " << numInput << std::endl;
+			return true;
+		}
+
+	LOG_ALL(simpleprocessnodelog) << getLogPrefix() << "output " << numOutput << " does not depend on " << numInput << std::endl;
+	return false;
+}
+
+template <typename LockingStrategy>
+bool
+SimpleProcessNode<LockingStrategy>::multiInputOutputDepends(int numMultiInput, int numOutput) {
+
+	if (_multiInputDirtys[numMultiInput].size() == 0 || numOutput == -1) {
+
+		LOG_ALL(simpleprocessnodelog) << getLogPrefix() << "output " << numOutput << " does implicitly depend on multi-input " << numMultiInput << std::endl;
+		return true;
+	}
+
+	for (int i = 0; i < _multiInputDirtys[numMultiInput].size(); i++)
+		if (_multiInputDirtys[numMultiInput][i] == numOutput) {
+
+			LOG_ALL(simpleprocessnodelog) << getLogPrefix() << "output " << numOutput << " does explicitly depend on multi-input " << numMultiInput << std::endl;
+			return true;
+		}
+
+	LOG_ALL(simpleprocessnodelog) << getLogPrefix() << "output " << numOutput << " does not depend on multi-input " << numMultiInput << std::endl;
+	return false;
 }
 
 // compile these specializations
