@@ -244,7 +244,7 @@ private:
 	void onUpdate(const Update& signal, int numOutput);
 
 	// thread save (by locking)
-	void sendUpdateSignals();
+	void sendUpdateSignals(int numOutput = -1);
 
 	void sendModifiedSignals(int numIntput, int numMultiInput = -1);
 
@@ -257,6 +257,9 @@ private:
 	void setOutputsDirty(bool dirty = true);
 
 	bool requiredInputsPresent();
+
+	bool inputOutputDepends(int numInput, int numOutput);
+	bool multiInputOutputDepends(int numInput, int numOutput);
 
 	std::string getLogPrefix() { return std::string("[") + typeName(*this) + (_name.size() ? std::string("(") + _name + ")]" : "]"); }
 
