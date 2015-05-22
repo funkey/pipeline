@@ -169,7 +169,7 @@ ProcessNode::getOutput(unsigned int i) {
 OutputBase&
 ProcessNode::getOutput(std::string name) {
 
-	LOG_ALL(pipelinelog) << "[ProcessNode] searching for output with name " << name << std::endl;
+	PIPELINE_LOG_ALL(pipelinelog) << "[ProcessNode] searching for output with name " << name << std::endl;
 
 	if (!_outputNames.count(name)) {
 

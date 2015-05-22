@@ -330,7 +330,7 @@ private:
 	template <typename OutputType>
 	bool __accept(OutputType& output) {
 
-		LOG_ALL(pipelinelog) << "[" << typeName(this) << "] trying to accept output " << typeName(output) << std::endl;
+		PIPELINE_LOG_ALL(pipelinelog) << "[" << typeName(this) << "] trying to accept output " << typeName(output) << std::endl;
 
 		// create a new input
 		boost::shared_ptr<Input<DataType> > newInput(new Input<DataType>());
@@ -338,11 +338,11 @@ private:
 		// store it, if it is compatible
 		if (newInput->accept(output)) {
 
-			LOG_ALL(pipelinelog) << "[" << typeName(this) << "] I can accept it" << std::endl;
+			PIPELINE_LOG_ALL(pipelinelog) << "[" << typeName(this) << "] I can accept it" << std::endl;
 
 			unsigned int numInput = _inputs.size();
 
-			LOG_ALL(pipelinelog) << "[" << typeName(this) << "] registering slots:" << std::endl;
+			PIPELINE_LOG_ALL(pipelinelog) << "[" << typeName(this) << "] registering slots:" << std::endl;
 
 			foreach (signals::SlotsBase* slots, getSlots()) {
 
@@ -350,10 +350,10 @@ private:
 
 				newInput->registerSlot((*slots)[s]);
 
-				LOG_ALL(pipelinelog) << "[" << typeName(this) << "] " << typeName((*slots)[s]) << std::endl;
+				PIPELINE_LOG_ALL(pipelinelog) << "[" << typeName(this) << "] " << typeName((*slots)[s]) << std::endl;
 			}
 
-			LOG_ALL(pipelinelog) << "[" << typeName(this) << "] registering callbacks:" << std::endl;
+			PIPELINE_LOG_ALL(pipelinelog) << "[" << typeName(this) << "] registering callbacks:" << std::endl;
 
 			typedef std::pair<CallbacksBase*, ProcessNode*> cp_pair;
 			foreach (cp_pair pair, getMultiCallbacks()) {
@@ -366,7 +366,7 @@ private:
 				else
 					multiCallback->registerAtInput(*newInput, numInput);
 
-				LOG_ALL(pipelinelog) << "[" << typeName(this) << "] " << typeName(multiCallback) << std::endl;
+				PIPELINE_LOG_ALL(pipelinelog) << "[" << typeName(this) << "] " << typeName(multiCallback) << std::endl;
 			}
 
 			if (!_internalConnected) {
@@ -377,7 +377,7 @@ private:
 				_internalConnected = true;
 			}
 
-			LOG_ALL(pipelinelog) << "[" << typeName(this) << "] establishing signalling connections" << std::endl;
+			PIPELINE_LOG_ALL(pipelinelog) << "[" << typeName(this) << "] establishing signalling connections" << std::endl;
 
 			establishingSignalling(output, *newInput);
 
@@ -399,7 +399,7 @@ private:
 		output.getSender().connect(getReceiver());
 		getSender().connect(output.getReceiver());
 
-		LOG_ALL(pipelinelog) << "[" << typeName(this) << "] sending InputAdded" << std::endl;
+		PIPELINE_LOG_ALL(pipelinelog) << "[" << typeName(this) << "] sending InputAdded" << std::endl;
 
 		// inform about new input
 		_inputAdded(input_added_type(newInput));
@@ -409,7 +409,7 @@ private:
 
 		// no signalling for data pointers as inputs
 
-		LOG_ALL(pipelinelog) << "[" << typeName(this) << "] sending InputAddedToSharedPointer" << std::endl;
+		PIPELINE_LOG_ALL(pipelinelog) << "[" << typeName(this) << "] sending InputAddedToSharedPointer" << std::endl;
 
 		// inform about new input
 		_inputAddedToSharedPointer(input_added_to_shared_pointer_type(newInput));
