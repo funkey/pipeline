@@ -615,18 +615,18 @@ SimpleProcessNode<LockingStrategy>::inputOutputDepends(int numInput, int numOutp
 
 	if (_inputDirtys[numInput].size() == 0 || numOutput == -1) {
 
-		LOG_ALL(simpleprocessnodelog) << getLogPrefix() << "output " << numOutput << " does implicitly depend on " << numInput << std::endl;
+		PIPELINE_LOG_ALL(simpleprocessnodelog) << getLogPrefix() << "output " << numOutput << " does implicitly depend on " << numInput << std::endl;
 		return true;
 	}
 
 	for (int i = 0; i < _inputDirtys[numInput].size(); i++)
 		if (_inputDirtys[numInput][i] == numOutput) {
 
-			LOG_ALL(simpleprocessnodelog) << getLogPrefix() << "output " << numOutput << " does explicitly depend on " << numInput << std::endl;
+			PIPELINE_LOG_ALL(simpleprocessnodelog) << getLogPrefix() << "output " << numOutput << " does explicitly depend on " << numInput << std::endl;
 			return true;
 		}
 
-	LOG_ALL(simpleprocessnodelog) << getLogPrefix() << "output " << numOutput << " does not depend on " << numInput << std::endl;
+	PIPELINE_LOG_ALL(simpleprocessnodelog) << getLogPrefix() << "output " << numOutput << " does not depend on " << numInput << std::endl;
 	return false;
 }
 
@@ -636,18 +636,18 @@ SimpleProcessNode<LockingStrategy>::multiInputOutputDepends(int numMultiInput, i
 
 	if (_multiInputDirtys[numMultiInput].size() == 0 || numOutput == -1) {
 
-		LOG_ALL(simpleprocessnodelog) << getLogPrefix() << "output " << numOutput << " does implicitly depend on multi-input " << numMultiInput << std::endl;
+		PIPELINE_LOG_ALL(simpleprocessnodelog) << getLogPrefix() << "output " << numOutput << " does implicitly depend on multi-input " << numMultiInput << std::endl;
 		return true;
 	}
 
 	for (int i = 0; i < _multiInputDirtys[numMultiInput].size(); i++)
 		if (_multiInputDirtys[numMultiInput][i] == numOutput) {
 
-			LOG_ALL(simpleprocessnodelog) << getLogPrefix() << "output " << numOutput << " does explicitly depend on multi-input " << numMultiInput << std::endl;
+			PIPELINE_LOG_ALL(simpleprocessnodelog) << getLogPrefix() << "output " << numOutput << " does explicitly depend on multi-input " << numMultiInput << std::endl;
 			return true;
 		}
 
-	LOG_ALL(simpleprocessnodelog) << getLogPrefix() << "output " << numOutput << " does not depend on multi-input " << numMultiInput << std::endl;
+	PIPELINE_LOG_ALL(simpleprocessnodelog) << getLogPrefix() << "output " << numOutput << " does not depend on multi-input " << numMultiInput << std::endl;
 	return false;
 }
 
